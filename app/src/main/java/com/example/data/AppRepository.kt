@@ -1014,7 +1014,8 @@ class AppRepository(
         isCompleted: Boolean = false,
         date: Long = System.currentTimeMillis(),
         onlyInKhata: Boolean = false,
-        dueDate: Long = 0L
+        dueDate: Long = 0L,
+        cashGivenOut: Boolean = false
     ): Transaction {
         checkWritesAllowed()
         val newTx = TransactionEntity(
@@ -1056,6 +1057,25 @@ class AppRepository(
                             partyId = customerId
                         )
                         database.cashbookDao().insert(cashEntry)
+                    } else if (cashGivenOut && type == "GAVE" && !isSupplier) {
+                        // Customer was handed real cash: record it as money going out.
+                        val modeUpper = paymentMode.uppercase()
+                        val partyLabel = customer?.name ?: "Party"
+                        database.cashbookDao().insert(
+                            CashEntryEntity(
+                                type = "OUT",
+                                amount = amount,
+                                category = "Khata Payment",
+                                remark = if (note.isNotBlank()) note else "Cash given to $partyLabel",
+                                date = date,
+                                paymentMode = paymentMode,
+                                linkedId = newTx.id,
+                                source = "khata",
+                                bookType = if (modeUpper == "CASH") "CASH" else "BANK",
+                                partyName = partyLabel,
+                                partyId = customerId
+                            )
+                        )
                     }
                 }
             }

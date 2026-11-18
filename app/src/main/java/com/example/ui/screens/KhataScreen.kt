@@ -127,6 +127,7 @@ fun KhataScreen(
     var quickActionAmount by remember { mutableStateOf("") }
     var quickActionNote by remember { mutableStateOf("") }
     var quickActionPaymentMode by remember { mutableStateOf("CASH") }
+    var quickActionCashGiven by remember { mutableStateOf(false) }
     var quickActionDate by remember { mutableLongStateOf(System.currentTimeMillis()) }
 
     // Voice confirmation dialog state
@@ -1074,6 +1075,7 @@ fun KhataScreen(
             onDismissRequest = {
                 quickActionSelectedCustomer = null
                 quickActionType = null
+                quickActionCashGiven = false
             },
             title = {
                 Row(
@@ -1158,6 +1160,24 @@ fun KhataScreen(
                         }
                     }
 
+                    // Customer "I Gave": optionally record real cash handed over
+                    if (actionType == "GAVE" && cust.type != "SUPPLIER") {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(LanguageStrings.get("cash_given_switch", lang), fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                Text(LanguageStrings.get("cash_given_hint", lang), fontSize = 11.sp, color = TextSecondary)
+                            }
+                            Switch(
+                                checked = quickActionCashGiven,
+                                onCheckedChange = { quickActionCashGiven = it },
+                                modifier = Modifier.testTag("switch_cash_given")
+                            )
+                        }
+                    }
+
                     // Large Number Pad (1-9, ., 0, ⌫)
                     val keypadRows = listOf(
                         listOf("1", "2", "3"),
@@ -1219,8 +1239,10 @@ fun KhataScreen(
                                 amount = parsedAmount,
                                 note = quickActionNote.trim(),
                                 paymentMode = quickActionPaymentMode,
-                                date = quickActionDate
+                                date = quickActionDate,
+                                cashGivenOut = quickActionCashGiven
                             )
+                            quickActionCashGiven = false
                             lastSavedTx = tx
                             showUndoSnackbar = true
                             quickActionSelectedCustomer = null

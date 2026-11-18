@@ -588,6 +588,9 @@ object LanguageStrings {
         "search_bills_hint" to Trans("Bill no. ya party ka naam khojein...", "बिल नं. या पार्टी का नाम खोजें...", "બિલ નં. કે પાર્ટી શોધો...", "Search bill no. or party..."),
         "date_today_label" to Trans("Today", "आज", "આજે", "Today"),
         "date_yesterday_label" to Trans("Yesterday", "कल", "ગઈકાલે", "Yesterday"),
+        "bill_covered_by_advance" to Trans("Purane advance se bill pura ho gaya ✅", "पुराने एडवांस से बिल पूरा हो गया ✅", "જૂના એડવાન્સથી બિલ પૂરું થયું ✅", "Bill fully covered by an existing advance ✅"),
+        "cash_given_switch" to Trans("Cash haath mein diya", "नकद हाथ में दिया", "રોકડ હાથમાં આપી", "Cash actually given"),
+        "cash_given_hint" to Trans("Cashbook mein Cash Out (laal) entry banegi", "कैशबुक में कैश आउट (लाल) एंट्री बनेगी", "કેશબુકમાં કેશ આઉટ (લાલ) એન્ટ્રી બનશે", "Adds a red Cash Out entry in Cashbook"),
         "remainder_udhar_summary" to Trans("Baaki Udhar (Khata):", "बकाया उधार (खाता):", "બાકી ઉધાર (ખાતા):", "Remaining Udhar:"),
         "received_cashbook_summary" to Trans("Received (Cashbook):", "प्राप्त (कैशबुक):", "મળેલ (રોકડમેળ):", "Received (Cashbook):"),
 

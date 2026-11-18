@@ -1,4 +1,4 @@
-# Ghanshyam Billing
+# KhataApka
 
 A simple khata (ledger) and billing app for a small kids-wear shop that is run by one person.
 
@@ -39,6 +39,18 @@ The owner does the selling, the collection of payments and the deliveries all by
 - If the app ever crashes, the next start shows the error with a Share button.
 
 **Languages:** Hinglish, Hindi, Gujarati and English.
+
+## Screenshots
+
+| Home | Parties | Customer ledger |
+|---|---|---|
+| <img src="docs/screenshots/home.png" width="220"> | <img src="docs/screenshots/parties.png" width="220"> | <img src="docs/screenshots/customer-ledger.png" width="220"> |
+
+| Quick entry | Past bills | Cashbook |
+|---|---|---|
+| <img src="docs/screenshots/quick-entry.png" width="220"> | <img src="docs/screenshots/billing-past-bills.png" width="220"> | <img src="docs/screenshots/cashbook.png" width="220"> |
+
+_Names and phone numbers shown are test data._
 
 ## Privacy
 

@@ -299,7 +299,7 @@ fun BillingScreen(
                                         )
                                         if (selectedCustomerPhone.isNotBlank()) {
                                             Text(
-                                                text = selectedCustomerPhone,
+                                                text = PhoneUtil.toDisplay(selectedCustomerPhone),
                                                 fontSize = 12.sp,
                                                 color = TextSecondary
                                             )
@@ -437,7 +437,7 @@ fun BillingScreen(
                                                 Column {
                                                     Text(text = cust.name, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
                                                     if (cust.phone.isNotBlank()) {
-                                                        Text(text = cust.phone, fontSize = 11.sp, color = TextSecondary)
+                                                        Text(text = PhoneUtil.toDisplay(cust.phone), fontSize = 11.sp, color = TextSecondary)
                                                     }
                                                 }
                                                 if (balLabel.isNotBlank()) {
@@ -1165,7 +1165,7 @@ fun BillingScreen(
                                     )
                                     if (invoice.customerPhone.isNotBlank()) {
                                         Text(
-                                            text = invoice.customerPhone,
+                                            text = PhoneUtil.toDisplay(invoice.customerPhone),
                                             fontSize = 12.sp,
                                             color = TextSecondary
                                         )
@@ -1551,7 +1551,13 @@ fun BillingScreen(
                             fontWeight = FontWeight.SemiBold
                         )
                     }
-                    if (remUdhar > 0) {
+                    if (remUdhar > 0 && repository.getInvoicePaymentStatus(inv) == AppRepository.InvoicePaymentStatus.PAID) {
+                        Text(
+                            text = LanguageStrings.get("bill_covered_by_advance", currentLang),
+                            color = JamaGreen,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    } else if (remUdhar > 0) {
                         Text(
                             text = "Baaki Udhar in Khata: ₹${"%.2f".format(remUdhar)}",
                             color = UdharRed,
