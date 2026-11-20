@@ -70,7 +70,6 @@ fun ShopProfileScreen(
     repository: AppRepository,
     appLockManager: AppLockManager? = null,
     onOpenGuide: () -> Unit,
-    onNavigateToBankCheck: () -> Unit = {},
     onNavigateToAccountantReports: () -> Unit = {},
     onOpenBatteryGuide: () -> Unit = {}
 ) {
@@ -132,14 +131,6 @@ fun ShopProfileScreen(
     var newPinText by remember { mutableStateOf("") }
     var confirmPinText by remember { mutableStateOf("") }
     var pinError by remember { mutableStateOf<String?>(null) }
-
-    // Gemini API Key State
-    var apiKeyInput by remember { mutableStateOf(SecureSettingsManager.getGeminiApiKey(context)) }
-    var showApiKey by remember { mutableStateOf(false) }
-    var apiKeySavedToast by remember { mutableStateOf(false) }
-    var isTestingApiKey by remember { mutableStateOf(false) }
-    var testApiKeyResult by remember { mutableStateOf<Pair<Boolean, String>?>(null) }
-    var isSpeakRepliesActive by remember { mutableStateOf(SecureSettingsManager.isSpeakRepliesEnabled(context)) }
 
     // Daily Evening Report State
     var isDailyReportActive by remember { mutableStateOf(SecureSettingsManager.isDailyReportEnabled(context)) }
@@ -649,42 +640,6 @@ fun ShopProfileScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Simple Mode Card
-        val simpleMode by repository.simpleMode.collectAsState()
-        Card(
-            modifier = Modifier.fillMaxWidth().testTag("simple_mode_card"),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
-            border = CardDefaults.outlinedCardBorder()
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = LanguageStrings.get("simple_mode_label", currentLang),
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = TextPrimary
-                    )
-                    Text(
-                        text = LanguageStrings.get("simple_mode_desc", currentLang),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = TextSecondary
-                    )
-                }
-                Switch(
-                    checked = simpleMode,
-                    onCheckedChange = { repository.setSimpleMode(it) },
-                    modifier = Modifier.testTag("simple_mode_switch")
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
         // Battery & Auto-Start Setup Guide Card
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -732,57 +687,6 @@ fun ShopProfileScreen(
                     Icon(Icons.Default.Settings, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(text = LanguageStrings.get("battery_guide_title", currentLang), fontWeight = FontWeight.Bold)
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Bank Check (Statement Matching) Card
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
-            border = CardDefaults.outlinedCardBorder()
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(ChipActiveBg),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Default.FactCheck, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(22.dp))
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = LanguageStrings.get("bank_check_title", currentLang),
-                            fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.titleMedium,
-                            color = TextPrimary
-                        )
-                        Text(
-                            text = LanguageStrings.get("bank_check_desc", currentLang),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = TextSecondary
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Button(
-                    onClick = { onNavigateToBankCheck() },
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier.fillMaxWidth().height(46.dp)
-                ) {
-                    Icon(Icons.Default.Checklist, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = LanguageStrings.get("bank_check_title", currentLang), fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -1149,175 +1053,6 @@ fun ShopProfileScreen(
                             appLockManager?.setBlockScreenshotsEnabled(checked)
                             (context as? com.example.MainActivity)?.applyFlagSecure(checked)
                         }
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // ==========================================
-        // 2. GEMINI AI ENGINE & API KEY CONFIGURATION
-        // ==========================================
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
-            border = CardDefaults.outlinedCardBorder()
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(PrimaryBlue.copy(alpha = 0.12f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Default.SmartToy, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(22.dp))
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(LanguageStrings.get("voice_ai_title", currentLang), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium, color = TextPrimary)
-                        Text(LanguageStrings.get("voice_ai_desc", currentLang), style = MaterialTheme.typography.bodySmall, color = TextSecondary)
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-                Text(
-                    text = LanguageStrings.get("ai_key_free_note", currentLang),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = PrimaryBlue,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = LanguageStrings.get("ai_privacy_notice", currentLang),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                OutlinedTextField(
-                    value = apiKeyInput,
-                    onValueChange = {
-                        apiKeyInput = it
-                        apiKeySavedToast = false
-                        testApiKeyResult = null
-                    },
-                    label = { Text(text = LanguageStrings.get("gemini_api_key_label", currentLang)) },
-                    placeholder = { Text(text = LanguageStrings.get("gemini_api_key_placeholder", currentLang)) },
-                    singleLine = true,
-                    visualTransformation = if (showApiKey) VisualTransformation.None else PasswordVisualTransformation(),
-                    trailingIcon = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(onClick = {
-                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
-                                val clip = clipboard?.primaryClip
-                                if (clip != null && clip.itemCount > 0) {
-                                    val text = clip.getItemAt(0).text?.toString() ?: ""
-                                    if (text.isNotBlank()) {
-                                        apiKeyInput = text.trim()
-                                    }
-                                }
-                            }) {
-                                Icon(Icons.Default.ContentPaste, contentDescription = null, modifier = Modifier.size(18.dp))
-                            }
-                            IconButton(onClick = { showApiKey = !showApiKey }) {
-                                Icon(if (showApiKey) Icons.Default.VisibilityOff else Icons.Default.Visibility, contentDescription = null, modifier = Modifier.size(18.dp))
-                            }
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth().testTag("ai_key_input")
-                )
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Button(
-                        onClick = {
-                            coroutineScope.launch {
-                                isTestingApiKey = true
-                                testApiKeyResult = null
-                                val res = SecureSettingsManager.testGeminiApiKey(apiKeyInput)
-                                testApiKeyResult = res
-                                isTestingApiKey = false
-                            }
-                        },
-                        enabled = !isTestingApiKey && apiKeyInput.isNotBlank(),
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue.copy(alpha = 0.12f), contentColor = PrimaryBlue),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.weight(1f).height(44.dp).testTag("btn_test_ai_key")
-                    ) {
-                        val testBtnText = if (isTestingApiKey) LanguageStrings.get("testing_key", currentLang) else LanguageStrings.get("btn_test_key", currentLang)
-                        Text(text = testBtnText, fontWeight = FontWeight.Bold)
-                    }
-
-                    Button(
-                        onClick = {
-                            SecureSettingsManager.setGeminiApiKey(context, apiKeyInput)
-                            apiKeySavedToast = true
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.weight(1f).height(44.dp).testTag("btn_save_ai_key")
-                    ) {
-                        Icon(Icons.Default.Key, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(text = LanguageStrings.get("btn_save_key", currentLang), fontWeight = FontWeight.Bold)
-                    }
-                }
-
-                if (testApiKeyResult != null) {
-                    val (isSuccess, reason) = testApiKeyResult!!
-                    val resultColor = if (isSuccess) JamaGreen else UdharRed
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = reason,
-                        color = resultColor,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp,
-                        modifier = Modifier.testTag("test_key_result")
-                    )
-                }
-
-                if (apiKeySavedToast) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(text = LanguageStrings.get("key_saved_success", currentLang), color = JamaGreen, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                }
-
-                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = CardBorder.copy(alpha = 0.5f))
-
-                // Switch: Speak replies (default OFF)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = LanguageStrings.get("speak_replies_label", currentLang),
-                            fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.titleMedium,
-                            color = TextPrimary
-                        )
-                        Text(
-                            text = LanguageStrings.get("speak_replies_desc", currentLang),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = TextSecondary
-                        )
-                    }
-                    Switch(
-                        checked = isSpeakRepliesActive,
-                        onCheckedChange = {
-                            isSpeakRepliesActive = it
-                            SecureSettingsManager.setSpeakRepliesEnabled(context, it)
-                        },
-                        modifier = Modifier.testTag("speak_replies_switch")
                     )
                 }
             }

@@ -32,7 +32,7 @@ class MainActivity : FragmentActivity() {
 
     private lateinit var appLockManager: AppLockManager
     private val isLockedState = mutableStateOf(false)
-    private val pendingAiReport = mutableStateOf<String?>(null)
+    private val pendingDailyReport = mutableStateOf<String?>(null)
 
     fun applyFlagSecure(enable: Boolean) {
         if (enable) {
@@ -69,7 +69,7 @@ class MainActivity : FragmentActivity() {
                     modifier = Modifier.fillMaxSize()
                 ) {
                     val isLocked by isLockedState
-                    val initialReport by pendingAiReport
+                    val initialReport by pendingDailyReport
                     val storeProfile by repository.storeProfile.collectAsState()
 
                     if (isLocked) {
@@ -84,8 +84,8 @@ class MainActivity : FragmentActivity() {
                         GhanshyamApp(
                             repository = repository,
                             appLockManager = appLockManager,
-                            initialAiReport = initialReport,
-                            onAiReportConsumed = { pendingAiReport.value = null }
+                            dailyReport = initialReport,
+                            onDailyReportConsumed = { pendingDailyReport.value = null }
                         )
                     }
 
@@ -143,7 +143,7 @@ class MainActivity : FragmentActivity() {
         if (intent != null) {
             val report = intent.getStringExtra("DAILY_REPORT_CONTENT")
             if (!report.isNullOrBlank()) {
-                pendingAiReport.value = report
+                pendingDailyReport.value = report
             }
         }
     }

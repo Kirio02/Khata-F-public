@@ -88,7 +88,6 @@ dependencies {
     implementation(libs.androidx.fragment)
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.security.crypto)
-    implementation(libs.okhttp)
 
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)

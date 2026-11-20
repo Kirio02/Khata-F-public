@@ -50,8 +50,7 @@ private data class DayCashSection(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CashbookScreen(
-    repository: AppRepository,
-    onNavigateToBankCheck: (() -> Unit)? = null
+    repository: AppRepository
 ) {
     val context = LocalContext.current
     val allEntries by repository.cashbook.collectAsState()
@@ -283,18 +282,6 @@ fun CashbookScreen(
                                 Icon(
                                     Icons.Default.Calculate,
                                     contentDescription = LanguageStrings.get("count_drawer_btn", lang),
-                                    tint = PrimaryBlue,
-                                    modifier = Modifier.size(22.dp)
-                                )
-                            }
-                        } else if (onNavigateToBankCheck != null) {
-                            IconButton(
-                                onClick = { onNavigateToBankCheck() },
-                                modifier = Modifier.size(38.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.FactCheck,
-                                    contentDescription = LanguageStrings.get("bank_check_title", lang),
                                     tint = PrimaryBlue,
                                     modifier = Modifier.size(22.dp)
                                 )

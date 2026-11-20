@@ -7,6 +7,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.asImageBitmap
@@ -25,7 +27,6 @@ import androidx.compose.ui.unit.sp
 import com.example.data.AppRepository
 import com.example.model.AppLanguage
 import com.example.model.Customer
-import com.example.ui.ai.AiAssistantModal
 import com.example.ui.components.AppLoadingScreen
 import com.example.ui.screens.*
 import com.example.ui.theme.*
@@ -38,8 +39,8 @@ import kotlinx.coroutines.launch
 fun GhanshyamApp(
     repository: AppRepository,
     appLockManager: com.example.ui.security.AppLockManager? = null,
-    initialAiReport: String? = null,
-    onAiReportConsumed: (() -> Unit)? = null
+    dailyReport: String? = null,
+    onDailyReportConsumed: (() -> Unit)? = null
 ) {
     val isInitialLoading by repository.isInitialLoading.collectAsState()
     val isMigrationBlocked by repository.isMigrationBlocked.collectAsState()
@@ -80,14 +81,8 @@ fun GhanshyamApp(
         return
     }
 
-    var showAiModal by rememberSaveable { mutableStateOf(false) }
     var showLanguageMenu by rememberSaveable { mutableStateOf(false) }
 
-    LaunchedEffect(initialAiReport) {
-        if (!initialAiReport.isNullOrBlank()) {
-            showAiModal = true
-        }
-    }
     var currentTab by rememberSaveable { mutableStateOf(0) } // 0: Khata, 1: Billing, 2: Cashbook, 3: Shop
     var selectedCustomerId by rememberSaveable { mutableStateOf<String?>(null) }
     var showGuideModal by rememberSaveable { mutableStateOf(false) }
@@ -148,15 +143,6 @@ fun GhanshyamApp(
     var currentSubScreen by rememberSaveable { mutableStateOf<String?>(null) }
 
     // Sub-Screen BackHandlers
-    if (currentSubScreen == "BANK_CHECK") {
-        BackHandler { currentSubScreen = null }
-        BankCheckScreen(
-            repository = repository,
-            onBack = { currentSubScreen = null }
-        )
-        return
-    }
-
     if (currentSubScreen == "ACCOUNTANT_REPORTS") {
         BackHandler { currentSubScreen = null }
         AccountantReportsScreen(
@@ -318,22 +304,6 @@ fun GhanshyamApp(
 
                     Spacer(modifier = Modifier.width(8.dp))
 
-                    // Voice AI Assistant Button (placed directly next to Language button)
-                    IconButton(
-                        onClick = { showAiModal = true },
-                        modifier = Modifier
-                            .size(38.dp)
-                            .clip(CircleShape)
-                            .background(BrandMaroon)
-                    ) {
-                        Icon(
-                            Icons.Default.SmartToy,
-                            contentDescription = "Voice AI Assistant",
-                            tint = SurfaceWhite,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-
                     Spacer(modifier = Modifier.width(8.dp))
                 }
             )
@@ -489,15 +459,11 @@ fun GhanshyamApp(
                         onNavigateToBilling = { currentTab = 1 }
                     )
                     1 -> BillingScreen(repository = repository)
-                    2 -> CashbookScreen(
-                        repository = repository,
-                        onNavigateToBankCheck = { currentSubScreen = "BANK_CHECK" }
-                    )
+                    2 -> CashbookScreen(repository = repository)
                     3 -> ShopProfileScreen(
                         repository = repository,
                         appLockManager = appLockManager,
                         onOpenGuide = { showGuideModal = true },
-                        onNavigateToBankCheck = { currentSubScreen = "BANK_CHECK" },
                         onNavigateToAccountantReports = { currentSubScreen = "ACCOUNTANT_REPORTS" },
                         onOpenBatteryGuide = { currentSubScreen = "BATTERY_GUIDE" }
                     )
@@ -506,13 +472,24 @@ fun GhanshyamApp(
         }
     }
 
-    if (showAiModal) {
-        AiAssistantModal(
-            repository = repository,
-            initialReportContent = initialAiReport,
-            onDismiss = {
-                showAiModal = false
-                onAiReportConsumed?.invoke()
+    if (!dailyReport.isNullOrBlank()) {
+        AlertDialog(
+            onDismissRequest = { onDailyReportConsumed?.invoke() },
+            title = {
+                Text(
+                    text = LanguageStrings.get("daily_report_title", currentLanguage),
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    Text(text = dailyReport, fontSize = 15.sp)
+                }
+            },
+            confirmButton = {
+                Button(onClick = { onDailyReportConsumed?.invoke() }) {
+                    Text(LanguageStrings.get("btn_dismiss", currentLanguage))
+                }
             }
         )
     }

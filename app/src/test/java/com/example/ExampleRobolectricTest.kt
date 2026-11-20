@@ -8,8 +8,6 @@ import com.example.model.Invoice
 import com.example.model.InvoiceItem
 import com.example.model.PartyType
 import com.example.model.StoreProfile
-import com.example.ui.ai.AiResponse
-import com.example.ui.ai.GhanshyamAiEngine
 import com.example.ui.report.DailyReportScheduler
 import com.example.ui.report.DailyReportWorker
 import com.example.ui.security.AppLockManager
@@ -292,22 +290,6 @@ class ExampleRobolectricTest {
         val suresh = repository.customers.value.find { it.name == "Suresh Shah" }
         assertNotNull(suresh)
         assertEquals(-450.0, repository.getCustomerBalance(suresh!!.id), 0.01)
-    }
-
-    @Test
-    fun testAiEngineOutOfScopeAndReport() = runBlocking {
-        val ai = GhanshyamAiEngine(repository)
-
-        // Test out of scope
-        val outOfScopeRes = ai.processQuery("What is the weather in Paris?")
-        assertTrue("Should detect out of scope", outOfScopeRes is AiResponse.OutOfScope)
-
-        // Test report generation
-        val reportRes = ai.processQuery("Show me today sales report and statement")
-        assertTrue("Should generate business report", reportRes is AiResponse.Success)
-        val succ = reportRes as AiResponse.Success
-        assertNotNull(succ.reportContent)
-        assertTrue(succ.reportContent!!.contains("GHANSHYAM BILLING BUSINESS REPORT"))
     }
 
     @Test
@@ -663,67 +645,6 @@ class ExampleRobolectricTest {
         appLock.removePin()
         assertFalse("PIN removed", appLock.hasPin())
         assertFalse("No lock once PIN removed", appLock.shouldLock())
-    }
-
-    @Test
-    fun testTask5AiEngineMoneyQueriesAndConfirmationCardApply() = runBlocking {
-        val ai = GhanshyamAiEngine(repository, context)
-
-        // Setup customer owing > 5000 and another owing < 5000
-        val richParty = repository.addCustomer("Ramesh Cloth Store", "9820011111")
-        repository.addTransaction(richParty.id, 7500.0, "GAVE", "Silk Sarees Wholesale")
-
-        val smallParty = repository.addCustomer("Chhotu Bhai", "9820022222")
-        repository.addTransaction(smallParty.id, 2000.0, "GAVE", "Handkerchiefs")
-
-        // 1. Query: "who owes me more than 5000?"
-        val debtResponse = ai.processQuery("who owes me more than 5000?")
-        assertTrue(debtResponse is AiResponse.Success)
-        val debtText = (debtResponse as AiResponse.Success).replyText
-        assertTrue("Must contain Ramesh Cloth Store", debtText.contains("Ramesh Cloth Store"))
-        assertTrue("Must contain 7500", debtText.contains("7500"))
-        assertFalse("Must NOT contain Chhotu Bhai (> 5000 filter)", debtText.contains("Chhotu Bhai"))
-
-        // 2. Query: "total cash sales this week"
-        val cashInvoice = Invoice(
-            billNumber = "",
-            date = System.currentTimeMillis(),
-            customerName = "Walk-in Cash Customer",
-            items = listOf(InvoiceItem(name = "T-Shirts Lot", quantity = 10, unitPrice = 350.0, total = 3500.0)),
-            subtotal = 3500.0,
-            totalAmount = 3500.0,
-            paymentMode = "CASH"
-        )
-        repository.createInvoice(cashInvoice)
-
-        val salesResponse = ai.processQuery("total cash sales this week")
-        assertTrue(salesResponse is AiResponse.Success)
-        val salesText = (salesResponse as AiResponse.Success).replyText
-        assertTrue("Must report exact 3500 cash sales", salesText.contains("3500"))
-
-        // 3. Write Action Confirmation Card: "add customer Suresh Patel 9898011223"
-        val initialCustCount = repository.customers.value.size
-        val addCustResponse = ai.processQuery("add customer Suresh Patel 9898011223")
-        assertTrue(addCustResponse is AiResponse.Success)
-        val addCustSuccess = addCustResponse as AiResponse.Success
-
-        // Confirmation card proposed:
-        assertNotNull("Must return actionTitle for confirmation card", addCustSuccess.actionTitle)
-        assertTrue(addCustSuccess.actionTitle!!.contains("Suresh Patel"))
-        assertNotNull("Must provide executable action lambda", addCustSuccess.executeAction)
-
-        // CRITICAL: Must NEVER execute automatically before user taps Apply!
-        assertEquals("Customer must NOT be added before tapping Apply", initialCustCount, repository.customers.value.size)
-        assertNull("Suresh Patel must not exist yet", repository.customers.value.find { it.name.contains("Suresh Patel") })
-
-        // User taps "Apply"
-        addCustSuccess.executeAction!!.invoke()
-
-        // Now saved!
-        assertEquals("Customer count increments by 1", initialCustCount + 1, repository.customers.value.size)
-        val newCustomer = repository.customers.value.find { it.name.contains("Suresh Patel") }
-        assertNotNull("Suresh Patel is saved after tapping Apply", newCustomer)
-        assertEquals("919898011223", newCustomer!!.phone)
     }
 
     @Test
@@ -1305,90 +1226,6 @@ class ExampleRobolectricTest {
         val now = System.currentTimeMillis()
         repository.recordBackupCompleted(now)
         assertEquals("Last backup timestamp should be updated", now, repository.lastBackupTimestamp.value)
-    }
-
-    @Test
-    fun testTask15AiKeyModelAndSecurity() = runBlocking {
-        // 1. GEMINI_MODEL is defined in ONE constant and is gemini-2.5-flash
-        assertEquals("gemini-2.5-flash", GhanshyamAiEngine.GEMINI_MODEL)
-
-        // 2. EncryptedSharedPreferences stores AI key, speak replies, natural voice
-        val testKey = "AIzaSyTestTask15Key12345"
-        SecureSettingsManager.setGeminiApiKey(context, testKey)
-        assertEquals(testKey, SecureSettingsManager.getGeminiApiKey(context))
-
-        // Speak replies default is OFF
-        assertFalse(SecureSettingsManager.isSpeakRepliesEnabled(context))
-        SecureSettingsManager.setSpeakRepliesEnabled(context, true)
-        assertTrue(SecureSettingsManager.isSpeakRepliesEnabled(context))
-
-        // Natural voice default is OFF
-        assertFalse(SecureSettingsManager.isNaturalVoiceEnabled(context))
-        SecureSettingsManager.setNaturalVoiceEnabled(context, true)
-        assertTrue(SecureSettingsManager.isNaturalVoiceEnabled(context))
-
-        // 3. Testing an invalid API key gives exact failure reason
-        val (isSuccess, message) = SecureSettingsManager.testGeminiApiKey("invalid_key_xyz")
-        assertFalse(isSuccess)
-        assertTrue(
-            "Result reason should indicate Invalid API key or network error",
-            message.contains("Invalid API key") ||
-            message.contains("No internet connection") ||
-            message.contains("Quota exceeded") ||
-            message.contains("Model not found")
-        )
-    }
-
-    @Test
-    fun testTask15RealLedgerQueriesAndMarkdownStripping() = runBlocking {
-        // Strip markdown test (no *, #, _, `)
-        val rawMarkdown = "### Total: **₹15,000** for _Ramesh_ `ledger`"
-        val stripped = GhanshyamAiEngine.stripMarkdown(rawMarkdown)
-        assertFalse("Markdown headers should be removed", stripped.contains("###"))
-        assertFalse("Markdown bold should be removed", stripped.contains("**"))
-        assertFalse("Markdown italic should be removed", stripped.contains("_"))
-        assertFalse("Markdown code should be removed", stripped.contains("`"))
-        assertTrue("Text content should be preserved", stripped.contains("Total: ₹15,000 for Ramesh ledger"))
-
-        // Set up real ledger data
-        val cust = repository.addCustomer("Ramesh Clothing", "+91 98765 43210")
-        repository.addTransaction(cust.id, 5000.0, "GAVE", "Suit materials", "CASH")
-        repository.addTransaction(cust.id, 1200.0, "GOT", "Part payment", "CASH")
-
-        // Offline / fallback query engine uses real ledger
-        val aiEngine = GhanshyamAiEngine(repository, context)
-
-        // "Ramesh ka kitna baaki hai?" -> fetches customer balance (5000 - 1200 = 3800)
-        val query1 = "Ramesh ka kitna baaki hai?"
-        val resp1 = aiEngine.processQuery(query1)
-        assertTrue("Response must be Success", resp1 is AiResponse.Success)
-        val success1 = resp1 as AiResponse.Success
-        assertTrue("Must state offline mode", success1.replyText.contains("Offline mode"))
-        assertTrue("Must contain accurate remaining balance 3800", success1.replyText.contains("3800") || success1.replyText.contains("3,800"))
-        assertFalse("Reply must not have markdown symbols", success1.replyText.contains("*") || success1.replyText.contains("#"))
-
-        // "is hafte kitna paisa aaya?" -> fetches week receipts (1200)
-        val query2 = "is hafte kitna paisa aaya?"
-        val resp2 = aiEngine.processQuery(query2)
-        assertTrue("Response must be Success", resp2 is AiResponse.Success)
-        val success2 = resp2 as AiResponse.Success
-        assertTrue("Must state offline mode", success2.replyText.contains("Offline mode"))
-        assertTrue("Must contain total received this week (1200)", success2.replyText.contains("1200") || success2.replyText.contains("1,200"))
-
-        // "Suresh ko add karo" -> write action proposal only (NOT written to DB until Apply)
-        val query3 = "Suresh ko add karo"
-        val initialCustCount = repository.customers.value.size
-        val resp3 = aiEngine.processQuery(query3)
-        assertTrue("Response must be Success", resp3 is AiResponse.Success)
-        val success3 = resp3 as AiResponse.Success
-        assertNotNull("Must return actionTitle", success3.actionTitle)
-        assertNotNull("Must return executeAction lambda", success3.executeAction)
-        assertEquals("Party count in DB must NOT change before Apply", initialCustCount, repository.customers.value.size)
-
-        // Now simulate user tapping Apply
-        success3.executeAction?.invoke()
-        assertEquals("Party count in DB must increase by 1 after Apply", initialCustCount + 1, repository.customers.value.size)
-        assertTrue("New party Suresh should now be present in repository", repository.customers.value.any { it.name.contains("Suresh") })
     }
 
     @Test
