@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,8 +54,23 @@ fun AttachmentPickerStrip(
 
     var showOptionsDialog by remember { mutableStateOf(false) }
     var isProcessing by remember { mutableStateOf(false) }
-    var tempCameraUri by remember { mutableStateOf<Uri?>(null) }
-    var tempCameraFile by remember { mutableStateOf<File?>(null) }
+    // rememberSaveable: on low-memory phones Android often kills the app while the
+    // camera is open. Plain remember() would forget where the photo was saved.
+    var tempCameraUri by rememberSaveable { mutableStateOf<Uri?>(null) }
+    var tempCameraPath by rememberSaveable { mutableStateOf<String?>(null) }
+    var pendingRemoval by remember { mutableStateOf<Attachment?>(null) }
+    var viewerIndex by remember { mutableStateOf<Int?>(null) }
+
+    fun removeAttachment(att: Attachment) {
+        AttachmentManager.deleteAttachmentFiles(att)
+        onAttachmentsChanged(attachments.filter { it.id != att.id })
+    }
+
+    fun clearTempCamera() {
+        tempCameraPath?.let { File(it).delete() }
+        tempCameraUri = null
+        tempCameraPath = null
+    }
 
     // Camera Launcher (TakePicture + FileProvider)
     val takePictureLauncher = rememberLauncherForActivityResult(
@@ -73,49 +89,53 @@ fun AttachmentPickerStrip(
                     )
                     onAttachmentsChanged(attachments + att)
                 } catch (e: Exception) {
-                    Toast.makeText(context, e.message ?: "Failed to process photo", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, LanguageStrings.get("photo_add_failed", currentLang), Toast.LENGTH_SHORT).show()
                 } finally {
-                    tempCameraFile?.delete()
-                    tempCameraUri = null
-                    tempCameraFile = null
+                    clearTempCamera()
                     isProcessing = false
                 }
             }
         } else {
-            tempCameraFile?.delete()
-            tempCameraUri = null
-            tempCameraFile = null
+            clearTempCamera()
         }
     }
 
-    // Gallery Launcher (PickMultipleVisualMedia max 5)
+    // Gallery Launcher. The limit is a fixed 5: PickMultipleVisualMedia throws if
+    // maxItems < 2, so it must not shrink as photos are added. Extra picks are
+    // dropped below using the free slots.
     val pickMultipleVisualMediaLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickMultipleVisualMedia(
-            maxItems = (5 - attachments.size).coerceAtLeast(1)
-        )
+        contract = ActivityResultContracts.PickMultipleVisualMedia(maxItems = MAX_ATTACHMENTS)
     ) { uris ->
         if (uris.isNotEmpty()) {
             coroutineScope.launch {
                 isProcessing = true
-                try {
-                    val remainingSlots = 5 - attachments.size
-                    val toProcess = uris.take(remainingSlots)
-                    val newAttachments = mutableListOf<Attachment>()
-                    for (u in toProcess) {
-                        val att = AttachmentManager.processAndSaveImage(
-                            context = context,
-                            uri = u,
-                            ownerType = ownerType,
-                            ownerId = ownerId
-                        )
-                        newAttachments.add(att)
-                    }
-                    onAttachmentsChanged(attachments + newAttachments)
-                } catch (e: Exception) {
-                    Toast.makeText(context, e.message ?: "Failed to process photo", Toast.LENGTH_SHORT).show()
-                } finally {
-                    isProcessing = false
+                val remainingSlots = (MAX_ATTACHMENTS - attachments.size).coerceAtLeast(0)
+                if (uris.size > remainingSlots) {
+                    Toast.makeText(context, LanguageStrings.get("max_attachments_reached", currentLang), Toast.LENGTH_SHORT).show()
                 }
+                val newAttachments = mutableListOf<Attachment>()
+                var failures = 0
+                // Each photo on its own, so one bad file doesn't lose the others.
+                for (u in uris.take(remainingSlots)) {
+                    try {
+                        newAttachments.add(
+                            AttachmentManager.processAndSaveImage(
+                                context = context,
+                                uri = u,
+                                ownerType = ownerType,
+                                ownerId = ownerId
+                            )
+                        )
+                    } catch (e: Exception) {
+                        failures++
+                    }
+                }
+                if (newAttachments.isNotEmpty()) onAttachmentsChanged(attachments + newAttachments)
+                if (failures > 0) {
+                    val key = if (newAttachments.isEmpty()) "photo_add_failed" else "some_photos_failed"
+                    Toast.makeText(context, LanguageStrings.get(key, currentLang), Toast.LENGTH_SHORT).show()
+                }
+                isProcessing = false
             }
         }
     }
@@ -139,7 +159,7 @@ fun AttachmentPickerStrip(
                     val msg = if (e.message?.contains("10 MB") == true) {
                         LanguageStrings.get("pdf_size_exceeded", currentLang)
                     } else {
-                        e.message ?: "Failed to process PDF"
+                        LanguageStrings.get("pdf_add_failed", currentLang)
                     }
                     Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
                 } finally {
@@ -160,7 +180,7 @@ fun AttachmentPickerStrip(
             // Big "Photo" Button
             OutlinedButton(
                 onClick = {
-                    if (attachments.size >= 5) {
+                    if (attachments.size >= MAX_ATTACHMENTS) {
                         Toast.makeText(
                             context,
                             LanguageStrings.get("max_attachments_reached", currentLang),
@@ -171,42 +191,49 @@ fun AttachmentPickerStrip(
                     }
                 },
                 shape = RoundedCornerShape(8.dp),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                modifier = Modifier.heightIn(min = 48.dp),
+                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryBlue),
                 border = ButtonDefaults.outlinedButtonBorder()
             ) {
                 Icon(
                     imageVector = Icons.Default.AddAPhoto,
                     contentDescription = LanguageStrings.get("btn_photo", currentLang),
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(22.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "${LanguageStrings.get("btn_photo", currentLang)} (${attachments.size}/5)",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
+                    text = "${LanguageStrings.get("btn_photo", currentLang)} (${attachments.size}/$MAX_ATTACHMENTS)",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    softWrap = false
                 )
             }
 
             // Thumbnail Strip
             attachments.forEachIndexed { index, att ->
-                val thumbFile = if (att.thumbPath.isNotBlank()) File(att.thumbPath) else File(att.filePath)
-                val bitmap = remember(thumbFile.absolutePath) {
-                    if (thumbFile.exists()) BitmapFactory.decodeFile(thumbFile.absolutePath) else null
+                val thumbPath = att.thumbPath.ifBlank { att.filePath }
+                // Decode off the main thread, downsampled, so cheap phones don't stutter
+                // (and a missing thumb doesn't load a full 1600px photo).
+                val bitmap by produceState<android.graphics.Bitmap?>(null, thumbPath) {
+                    value = withContext(Dispatchers.IO) { decodeThumbnail(thumbPath, THUMB_DECODE_PX) }
                 }
 
                 Box(
                     modifier = Modifier
-                        .size(54.dp)
+                        .size(72.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .border(1.dp, CardBorder, RoundedCornerShape(8.dp))
-                        .background(ChipInactiveBg),
+                        .background(ChipInactiveBg)
+                        .clickable { viewerIndex = index },
                     contentAlignment = Alignment.Center
                 ) {
-                    if (bitmap != null) {
+                    val bmp = bitmap
+                    if (bmp != null) {
                         Image(
-                            bitmap = bitmap.asImageBitmap(),
-                            contentDescription = att.caption.ifBlank { "Attachment #${index + 1}" },
+                            bitmap = bmp.asImageBitmap(),
+                            contentDescription = att.caption.ifBlank { "${LanguageStrings.get("btn_photo", currentLang)} ${index + 1}" },
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
                         )
@@ -215,43 +242,80 @@ fun AttachmentPickerStrip(
                             imageVector = Icons.Default.PictureAsPdf,
                             contentDescription = LanguageStrings.get("pdf_file_label", currentLang),
                             tint = UdharRed,
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(32.dp)
                         )
                     } else {
                         Icon(
                             imageVector = Icons.Default.Image,
                             contentDescription = null,
                             tint = TextSecondary,
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(32.dp)
                         )
                     }
 
-                    // Remove (X) button at top-right
+                    // Remove (X): 40dp touch area, asks before deleting.
                     Box(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
-                            .padding(2.dp)
-                            .size(18.dp)
-                            .clip(CircleShape)
-                            .background(SurfaceWhite.copy(alpha = 0.9f))
-                            .clickable {
-                                AttachmentManager.deleteAttachmentFiles(att)
-                                val updated = attachments.toMutableList()
-                                updated.removeAt(index)
-                                onAttachmentsChanged(updated)
-                            },
-                        contentAlignment = Alignment.Center
+                            .size(40.dp)
+                            .clickable { pendingRemoval = att },
+                        contentAlignment = Alignment.TopEnd
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = LanguageStrings.get("btn_delete", currentLang),
-                            tint = UdharRed,
-                            modifier = Modifier.size(12.dp)
-                        )
+                        Box(
+                            modifier = Modifier
+                                .padding(3.dp)
+                                .size(24.dp)
+                                .clip(CircleShape)
+                                .background(SurfaceWhite.copy(alpha = 0.92f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = LanguageStrings.get("btn_delete", currentLang),
+                                tint = UdharRed,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
                     }
                 }
             }
         }
+    }
+
+    // Confirm before removing a photo (a missed tap shouldn't delete it).
+    pendingRemoval?.let { att ->
+        AlertDialog(
+            onDismissRequest = { pendingRemoval = null },
+            title = { Text(LanguageStrings.get("remove_photo_title", currentLang), fontWeight = FontWeight.Bold) },
+            text = { Text(LanguageStrings.get("remove_photo_desc", currentLang)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    removeAttachment(att)
+                    pendingRemoval = null
+                }) {
+                    Text(LanguageStrings.get("btn_delete", currentLang), color = UdharRed, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingRemoval = null }) {
+                    Text(LanguageStrings.get("btn_cancel", currentLang))
+                }
+            }
+        )
+    }
+
+    // Tap a thumbnail to see it full screen (the viewer has its own delete confirm).
+    viewerIndex?.let { start ->
+        FullScreenAttachmentViewer(
+            attachments = attachments,
+            initialIndex = start.coerceIn(0, (attachments.size - 1).coerceAtLeast(0)),
+            currentLang = currentLang,
+            onDismiss = { viewerIndex = null },
+            onDelete = { att ->
+                removeAttachment(att)
+                if (attachments.size <= 1) viewerIndex = null
+            }
+        )
     }
 
     // Modal Option Dialog: Camera | Gallery | PDF
@@ -284,7 +348,7 @@ fun AttachmentPickerStrip(
                                 showOptionsDialog = false
                                 val (uri, file) = AttachmentManager.createTempCameraUri(context)
                                 tempCameraUri = uri
-                                tempCameraFile = file
+                                tempCameraPath = file.absolutePath
                                 takePictureLauncher.launch(uri)
                             }
                     )
@@ -364,4 +428,21 @@ fun AttachmentPickerStrip(
             }
         }
     }
+}
+
+private const val MAX_ATTACHMENTS = 5
+private const val THUMB_DECODE_PX = 200
+
+/** Decodes an image file scaled down to roughly [reqPx] on its longer side. */
+private fun decodeThumbnail(path: String, reqPx: Int): android.graphics.Bitmap? = try {
+    val f = File(path)
+    if (!f.exists() || f.length() == 0L) null else {
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(path, bounds)
+        var sample = 1
+        while (maxOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= reqPx) sample *= 2
+        BitmapFactory.decodeFile(path, BitmapFactory.Options().apply { inSampleSize = sample })
+    }
+} catch (e: Exception) {
+    null
 }
