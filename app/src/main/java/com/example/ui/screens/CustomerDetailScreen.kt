@@ -430,7 +430,7 @@ fun CustomerDetailScreen(
                                 Icon(
                                     imageVector = if (balance > 0) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
                                     contentDescription = null,
-                                    tint = if (balance > 0) JamaGreen else UdharRed,
+                                    tint = if (balance > 0) UdharRed else JamaGreen,
                                     modifier = Modifier.size(24.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
@@ -440,8 +440,8 @@ fun CustomerDetailScreen(
                                 style = MaterialTheme.typography.headlineLarge.copy(fontFeatureSettings = "tnum"),
                                 fontWeight = FontWeight.Bold,
                                 color = when {
-                                    balance > 0.001 -> JamaGreen
-                                    balance < -0.001 -> UdharRed
+                                    balance > 0.001 -> UdharRed
+                                    balance < -0.001 -> JamaGreen
                                     else -> TextPrimary
                                 },
                                 softWrap = false
@@ -460,8 +460,8 @@ fun CustomerDetailScreen(
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = when {
-                                balance > 0.001 -> JamaGreen
-                                balance < -0.001 -> UdharRed
+                                balance > 0.001 -> UdharRed
+                                balance < -0.001 -> JamaGreen
                                 else -> TextSecondary
                             },
                             fontWeight = FontWeight.SemiBold

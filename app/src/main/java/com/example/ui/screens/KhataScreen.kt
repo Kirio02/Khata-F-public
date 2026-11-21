@@ -672,7 +672,7 @@ fun KhataScreen(
                                                 text = formatIndianCurrency(amount),
                                                 fontWeight = FontWeight.Bold,
                                                 fontSize = 13.sp,
-                                                color = JamaGreen
+                                                color = UdharRed
                                             )
                                         }
 
@@ -974,8 +974,8 @@ fun KhataScreen(
                                         style = MaterialTheme.typography.titleMedium.copy(fontFeatureSettings = "tnum"),
                                         fontWeight = FontWeight.Bold,
                                         color = when {
-                                            balance > 0.001 -> JamaGreen
-                                            balance < -0.001 -> UdharRed
+                                            balance > 0.001 -> UdharRed
+                                            balance < -0.001 -> JamaGreen
                                             else -> TextSecondary
                                         },
                                         softWrap = false,
@@ -990,8 +990,8 @@ fun KhataScreen(
                                         },
                                         style = MaterialTheme.typography.labelSmall,
                                         color = when {
-                                            balance > 0.001 -> JamaGreen
-                                            balance < -0.001 -> UdharRed
+                                            balance > 0.001 -> UdharRed
+                                            balance < -0.001 -> JamaGreen
                                             else -> TextSecondary
                                         }
                                     )

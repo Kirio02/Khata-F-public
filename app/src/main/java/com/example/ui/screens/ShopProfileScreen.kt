@@ -1430,7 +1430,7 @@ fun ShopProfileScreen(
                                 Column(horizontalAlignment = Alignment.End) {
                                     Text(
                                         text = if (item.balance >= 0) "Lena: ₹${"%.2f".format(item.balance)}" else "Dena: ₹${"%.2f".format(-item.balance)}",
-                                        color = if (item.balance >= 0) JamaGreen else UdharRed,
+                                        color = if (item.balance >= 0) UdharRed else JamaGreen,
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 12.sp
                                     )
