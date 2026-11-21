@@ -1252,7 +1252,9 @@ fun BillingScreen(
                                                     chitAttachment = chitAttachments.firstOrNull(),
                                                     shopName = storeProfile.storeName.ifBlank { "Ghanshyam Kids Wear" },
                                                     upiId = storeProfile.upiId,
-                                                    currentLang = currentLang
+                                                    currentLang = currentLang,
+                                                    storeProfile = storeProfile,
+                                                    partyTotalDue = invoice.customerId.takeIf { it.isNotBlank() }?.let { repository.getCustomerBalance(it) }
                                                 )
                                             }
                                         ) {
@@ -1578,7 +1580,9 @@ fun BillingScreen(
                             chitAttachment = chitFirstPhoto,
                             shopName = storeProfile.storeName.ifBlank { "Ghanshyam Kids Wear" },
                             upiId = storeProfile.upiId,
-                            currentLang = currentLang
+                            currentLang = currentLang,
+                            storeProfile = storeProfile,
+                            partyTotalDue = inv.customerId.takeIf { it.isNotBlank() }?.let { repository.getCustomerBalance(it) }
                         )
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = JamaGreen)
@@ -1625,7 +1629,9 @@ private fun shareBillToWhatsApp(
     chitAttachment: Attachment?,
     shopName: String,
     upiId: String,
-    currentLang: AppLanguage
+    currentLang: AppLanguage,
+    storeProfile: com.example.model.StoreProfile,
+    partyTotalDue: Double?
 ) {
     val upiPart = if (upiId.isNotBlank()) " | UPI: $upiId" else ""
     val msg = "Namaste ${invoice.customerName} ji, aapka bill #${invoice.billNumber} ban gaya hai.\n" +
@@ -1636,6 +1642,48 @@ private fun shareBillToWhatsApp(
 
     val waNumber = PhoneUtil.toWhatsAppNumber(invoice.customerPhone)
     val whatsAppPackages = listOf("com.whatsapp", "com.whatsapp.w4b")
+
+    // Preferred: a proper PDF bill (with the chit photo inside) sent straight to the customer.
+    val pdfFile = try {
+        com.example.ui.util.BillPdfGenerator.generate(
+            context = context,
+            store = storeProfile,
+            data = com.example.ui.util.BillPdfGenerator.BillData(
+                invoice = invoice,
+                receivedNow = receivedNow,
+                partyTotalDue = partyTotalDue,
+                chitPhotoPath = chitAttachment?.takeIf { it.mimeType.startsWith("image") }?.filePath
+            ),
+            lang = currentLang
+        )
+    } catch (e: Exception) {
+        android.util.Log.w("BillingScreen", "PDF bill failed, sending photo/text instead: ${e.message}")
+        null
+    }
+    if (pdfFile != null && pdfFile.exists()) {
+        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", pdfFile)
+        val pdfIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "application/pdf"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            putExtra(Intent.EXTRA_TEXT, msg)
+            if (waNumber.isNotBlank()) putExtra("jid", "$waNumber@s.whatsapp.net")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        for (pkg in whatsAppPackages) {
+            try {
+                context.startActivity(Intent(pdfIntent).apply { setPackage(pkg) })
+                return
+            } catch (_: Exception) {
+                // Try next WhatsApp package
+            }
+        }
+        try {
+            context.startActivity(Intent.createChooser(pdfIntent, "Share Bill"))
+            return
+        } catch (_: Exception) {
+            // Fall back to photo / text below
+        }
+    }
 
     if (chitAttachment != null) {
         val file = File(chitAttachment.filePath)
