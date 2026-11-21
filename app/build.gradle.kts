@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
@@ -13,8 +15,8 @@ android {
         applicationId = "com.aistudio.ghanshyambilling.zptq"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -26,6 +28,18 @@ android {
             keyAlias = "androiddebugkey"
             keyPassword = "android"
         }
+        // Release key: read from keystore.properties (never committed). Without it,
+        // release builds stay unsigned instead of silently using the debug key.
+        val releaseProps = rootProject.file("keystore.properties")
+        if (releaseProps.exists()) {
+            val p = Properties().apply { releaseProps.inputStream().use { load(it) } }
+            create("release") {
+                storeFile = rootProject.file(p.getProperty("storeFile"))
+                storePassword = p.getProperty("storePassword")
+                keyAlias = p.getProperty("keyAlias")
+                keyPassword = p.getProperty("keyPassword")
+            }
+        }
     }
 
     buildTypes {
@@ -35,6 +49,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfigs.findByName("release")?.let { signingConfig = it }
         }
         debug {
             signingConfig = signingConfigs.getByName("debugConfig")
