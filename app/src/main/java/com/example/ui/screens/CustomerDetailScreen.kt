@@ -36,6 +36,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.ui.theme.*
 import com.example.ui.util.LanguageStrings
+import com.example.ui.util.RelativeDate
 import com.example.ui.util.AttachmentListSaver
 import com.example.ui.util.PhoneUtil
 import com.example.ui.util.StatementDateRange
@@ -75,6 +76,14 @@ fun CustomerDetailScreen(
     val customerTx = transactions.filter { it.customerId == currentCustomer.id }
         .sortedByDescending { it.date }
     val balance = repository.getCustomerBalance(currentCustomer.id)
+    // Balance right after each entry (oldest first), shown as "Bal." on every row.
+    val runningBalance = remember(customerTx) {
+        var acc = 0.0
+        customerTx.sortedWith(compareBy({ it.date }, { it.id })).associate { tx ->
+            acc += if (tx.type == "GAVE") tx.amount else -tx.amount
+            tx.id to acc
+        }
+    }
 
     // Multi-select state
     var isMultiSelectMode by remember { mutableStateOf(false) }
@@ -526,7 +535,8 @@ fun CustomerDetailScreen(
                         val isCreditBill = (currentCustomer.type == PartyType.CUSTOMER.raw && tx.type == "GAVE" && tx.linkedToTxId == null) ||
                                 (currentCustomer.type == PartyType.SUPPLIER.raw && tx.type == "GOT" && tx.linkedToTxId == null)
                         val isLinkedPayment = tx.linkedToTxId != null
-                        val dateStr = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date(tx.date))
+                        val dateStr = RelativeDate.format(tx.date, currentLang)
+                        val balAfter = runningBalance[tx.id] ?: 0.0
 
                         if (isCreditBill) {
                             val receivedAmt = repository.getBillReceivedAmount(tx.id)
@@ -659,6 +669,7 @@ fun CustomerDetailScreen(
                                                     softWrap = false
                                                 )
                                             }
+                                            RunningBalanceText(balAfter, currentLang)
                                         }
                                     }
 
@@ -806,6 +817,7 @@ fun CustomerDetailScreen(
                                             color = if (tx.type == "GOT") JamaGreen else UdharRed,
                                             softWrap = false
                                         )
+                                        RunningBalanceText(balAfter, currentLang)
 
                                         if (isLinkedPayment) {
                                             TextButton(
@@ -1857,4 +1869,19 @@ private fun LedgerHeaderAction(
             softWrap = false
         )
     }
+}
+
+/** "Bal. ₹1,855" under an entry: red while the party owes us, green when we owe them. */
+@Composable
+private fun RunningBalanceText(bal: Double, lang: com.example.model.AppLanguage) {
+    Text(
+        text = "${LanguageStrings.get("running_bal", lang)} ${formatIndianCurrency(kotlin.math.abs(bal))}",
+        style = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum"),
+        color = when {
+            bal > 0.001 -> UdharRed
+            bal < -0.001 -> JamaGreen
+            else -> TextSecondary
+        },
+        softWrap = false
+    )
 }

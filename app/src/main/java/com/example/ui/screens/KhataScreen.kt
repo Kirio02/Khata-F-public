@@ -267,6 +267,10 @@ fun KhataScreen(
 
     // Vasuli List: parties who owe money (> 0.01), sorted overdue first.
     // Overdue = a bill still unpaid and past due date / older than 15 days (shared rule, see OverdueLogic).
+    // "Sabko Yaad Dilayein": one list to WhatsApp every party who owes money, one by one.
+    var showRemindAll by remember { mutableStateOf(false) }
+    val remindedIds = remember { mutableStateListOf<String>() }
+
     val vasuliList = remember(customers, transactions, startOfToday) {
         val txByCustomer = transactions.groupBy { it.customerId }
         customers.mapNotNull { cust ->
@@ -624,7 +628,24 @@ fun KhataScreen(
                                     color = TextSecondary
                                 )
                             }
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(6.dp))
+                            OutlinedButton(
+                                onClick = { showRemindAll = true },
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp),
+                                shape = RoundedCornerShape(10.dp),
+                                border = BorderStroke(1.dp, JamaGreen.copy(alpha = 0.5f)),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = JamaGreen)
+                            ) {
+                                Icon(Icons.Default.Chat, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "${LanguageStrings.get("remind_all_btn", lang)} (${vasuliList.size})",
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
 
                             vasuliList.take(5).forEach { (party, amount, isOverdue) ->
                                 Card(
@@ -659,7 +680,7 @@ fun KhataScreen(
                                                         color = UdharRed.copy(alpha = 0.12f)
                                                     ) {
                                                         Text(
-                                                            text = "Overdue",
+                                                            text = LanguageStrings.get("overdue_tag", lang),
                                                             color = UdharRed,
                                                             fontSize = 9.sp,
                                                             fontWeight = FontWeight.Bold,
@@ -1563,6 +1584,84 @@ fun KhataScreen(
     }
 
     // Add Party Dialog
+    if (showRemindAll) {
+        AlertDialog(
+            onDismissRequest = { showRemindAll = false },
+            title = {
+                Column {
+                    Text(LanguageStrings.get("remind_all_title", lang), fontWeight = FontWeight.Bold)
+                    Text(
+                        LanguageStrings.get("remind_all_desc", lang),
+                        fontSize = 12.sp,
+                        color = TextSecondary
+                    )
+                }
+            },
+            text = {
+                LazyColumn(
+                    modifier = Modifier.heightIn(max = 420.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    items(vasuliList, key = { it.first.id }) { (party, amount, isOverdue) ->
+                        val sent = party.id in remindedIds
+                        val canSend = com.example.ui.util.PhoneUtil.isValid(party.phone)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (sent) JamaGreen.copy(alpha = 0.08f) else ChipInactiveBg)
+                                .padding(horizontal = 10.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    party.name,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    formatIndianCurrency(amount) + if (isOverdue) " • " + LanguageStrings.get("overdue_tag", lang) else "",
+                                    fontSize = 12.sp,
+                                    color = UdharRed
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            if (!canSend) {
+                                Text(LanguageStrings.get("remind_no_phone", lang), fontSize = 12.sp, color = TextTertiary)
+                            } else {
+                                Button(
+                                    onClick = {
+                                        launchWhatsApp(party.phone, party.name, amount)
+                                        if (!sent) remindedIds.add(party.id)
+                                    },
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (sent) SurfaceWhite else JamaGreen,
+                                        contentColor = if (sent) JamaGreen else SurfaceWhite
+                                    ),
+                                    border = if (sent) BorderStroke(1.dp, JamaGreen) else null
+                                ) {
+                                    Text(
+                                        if (sent) "✓ " + LanguageStrings.get("remind_sent", lang) else LanguageStrings.get("remind_send", lang),
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        softWrap = false
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showRemindAll = false }) {
+                    Text(LanguageStrings.get("btn_ok", lang), fontWeight = FontWeight.Bold)
+                }
+            }
+        )
+    }
+
     if (showAddPartyDialog) {
         var partyType by remember { mutableStateOf(PartyType.CUSTOMER) }
         var partyName by remember { mutableStateOf("") }
