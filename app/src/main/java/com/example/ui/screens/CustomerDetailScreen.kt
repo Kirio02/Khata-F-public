@@ -8,6 +8,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -1026,12 +1027,16 @@ fun CustomerDetailScreen(
                             style = MaterialTheme.typography.labelSmall,
                             color = TextSecondary
                         )
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        // Scrolls sideways instead of squeezing "30 days" onto 3 lines.
+                        Row(
+                            modifier = Modifier.horizontalScroll(androidx.compose.foundation.rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
                             listOf(0 to LanguageStrings.get("none_label", currentLang), 7 to "7 days", 15 to "15 days", 30 to "30 days").forEach { (days, label) ->
                                 FilterChip(
                                     selected = selectedDueDateDays == days,
                                     onClick = { selectedDueDateDays = days },
-                                    label = { Text(text = label, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+                                    label = { Text(text = label, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false) }
                                 )
                             }
                         }
