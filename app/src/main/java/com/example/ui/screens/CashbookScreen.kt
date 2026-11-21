@@ -418,7 +418,7 @@ fun CashbookScreen(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = LanguageStrings.get("cash_in_btn", lang),
+                            text = LanguageStrings.get(if (selectedBook == "CASH") "cash_in_btn" else "bank_in_btn", lang),
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp,
                             textAlign = TextAlign.Center,
@@ -445,7 +445,7 @@ fun CashbookScreen(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = LanguageStrings.get("cash_out_btn", lang),
+                            text = LanguageStrings.get(if (selectedBook == "CASH") "cash_out_btn" else "bank_out_btn", lang),
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp,
                             textAlign = TextAlign.Center,
@@ -894,7 +894,7 @@ fun CashbookScreen(
             onDismissRequest = { showAddDialog = false },
             title = {
                 Text(
-                    text = if (addDialogType == "IN") LanguageStrings.get("cash_in_btn", lang) else LanguageStrings.get("cash_out_btn", lang),
+                    text = if (addDialogType == "IN") LanguageStrings.get(if (selectedBook == "CASH") "cash_in_btn" else "bank_in_btn", lang) else LanguageStrings.get(if (selectedBook == "CASH") "cash_out_btn" else "bank_out_btn", lang),
                     fontWeight = FontWeight.Bold
                 )
             },
