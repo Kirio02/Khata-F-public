@@ -136,6 +136,7 @@ fun CustomerDetailScreen(
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = ChipActiveBg)
                 )
             } else {
+                Column {
                 TopAppBar(
                     title = {
                         Column(
@@ -195,82 +196,64 @@ fun CustomerDetailScreen(
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = TextPrimary)
                         }
                     },
-                    actions = {
-                        // Call
-                        IconButton(
-                            onClick = {
-                                if (hasPhone) {
-                                    val dialNumber = PhoneUtil.toWhatsAppNumber(currentCustomer.phone)
-                                    val uri = Uri.parse("tel:$dialNumber")
-                                    context.startActivity(Intent(Intent.ACTION_DIAL, uri))
-                                }
-                            },
-                            enabled = hasPhone
-                        ) {
-                            Icon(
-                                Icons.Default.Call,
-                                contentDescription = LanguageStrings.get("btn_call", currentLang),
-                                tint = if (hasPhone) PrimaryBlue else TextTertiary
-                            )
-                        }
-
-                        // SMS Reminder
-                        IconButton(
-                            onClick = {
-                                if (hasPhone) {
-                                    sendSmsReminder(
-                                        context = context,
-                                        party = currentCustomer,
-                                        shopName = storeProfile.storeName.ifBlank { "Ghanshyam Kids Wear" },
-                                        balance = balance,
-                                        upiId = storeProfile.upiId,
-                                        lang = currentLang
-                                    )
-                                }
-                            },
-                            enabled = hasPhone
-                        ) {
-                            Icon(
-                                Icons.Default.Chat,
-                                contentDescription = LanguageStrings.get("btn_sms", currentLang),
-                                tint = if (hasPhone) PrimaryBlue else TextTertiary
-                            )
-                        }
-
-                        // WhatsApp Reminder
-                        IconButton(
-                            onClick = {
-                                if (hasPhone) {
-                                    sendWhatsAppReminder(
-                                        context = context,
-                                        party = currentCustomer,
-                                        shopName = storeProfile.storeName.ifBlank { "Ghanshyam Kids Wear" },
-                                        balance = balance,
-                                        upiId = storeProfile.upiId,
-                                        lang = currentLang
-                                    )
-                                }
-                            },
-                            enabled = hasPhone
-                        ) {
-                            Icon(
-                                Icons.Default.Share,
-                                contentDescription = LanguageStrings.get("btn_whatsapp", currentLang),
-                                tint = if (hasPhone) JamaGreen else TextTertiary
-                            )
-                        }
-
-                        // Statement Dialog
-                        IconButton(onClick = { showStatementDialog = true }) {
-                            Icon(
-                                Icons.Default.Description,
-                                contentDescription = LanguageStrings.get("statement", currentLang),
-                                tint = TextPrimary
-                            )
-                        }
-                    },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceWhite)
                 )
+                // Labelled actions (icons alone were hard to tell apart).
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(SurfaceWhite)
+                        .padding(horizontal = 8.dp, vertical = 2.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    LedgerHeaderAction(
+                        icon = Icons.Default.Call,
+                        label = LanguageStrings.get("btn_call", currentLang),
+                        tint = PrimaryBlue,
+                        enabled = hasPhone
+                    ) {
+                        val dialNumber = PhoneUtil.toWhatsAppNumber(currentCustomer.phone)
+                        context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$dialNumber")))
+                    }
+                    LedgerHeaderAction(
+                        icon = Icons.Default.Chat,
+                        label = LanguageStrings.get("btn_sms", currentLang),
+                        tint = PrimaryBlue,
+                        enabled = hasPhone
+                    ) {
+                        sendSmsReminder(
+                            context = context,
+                            party = currentCustomer,
+                            shopName = storeProfile.storeName.ifBlank { "Ghanshyam Kids Wear" },
+                            balance = balance,
+                            upiId = storeProfile.upiId,
+                            lang = currentLang
+                        )
+                    }
+                    LedgerHeaderAction(
+                        icon = Icons.Default.Share,
+                        label = LanguageStrings.get("btn_whatsapp", currentLang),
+                        tint = JamaGreen,
+                        enabled = hasPhone
+                    ) {
+                        sendWhatsAppReminder(
+                            context = context,
+                            party = currentCustomer,
+                            shopName = storeProfile.storeName.ifBlank { "Ghanshyam Kids Wear" },
+                            balance = balance,
+                            upiId = storeProfile.upiId,
+                            lang = currentLang
+                        )
+                    }
+                    LedgerHeaderAction(
+                        icon = Icons.Default.Description,
+                        label = LanguageStrings.get("statement", currentLang),
+                        tint = TextPrimary,
+                        enabled = true
+                    ) { showStatementDialog = true }
+                }
+                HorizontalDivider(color = CardBorder)
+                }
             }
         },
         bottomBar = {
@@ -1032,7 +1015,7 @@ fun CustomerDetailScreen(
                             modifier = Modifier.horizontalScroll(androidx.compose.foundation.rememberScrollState()),
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            listOf(0 to LanguageStrings.get("none_label", currentLang), 7 to "7 days", 15 to "15 days", 30 to "30 days").forEach { (days, label) ->
+                            listOf(0 to LanguageStrings.get("none_label", currentLang), 7 to LanguageStrings.get("chip_7_days", currentLang), 15 to LanguageStrings.get("chip_15_days", currentLang), 30 to LanguageStrings.get("chip_30_days", currentLang)).forEach { (days, label) ->
                                 FilterChip(
                                     selected = selectedDueDateDays == days,
                                     onClick = { selectedDueDateDays = days },
@@ -1845,5 +1828,33 @@ private fun CustomerDetailScreenSmallPhonePreview() {
                 }
             }
         }
+    }
+}
+
+/** One labelled button in the ledger header row (icon with its name below). */
+@Composable
+private fun LedgerHeaderAction(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    tint: androidx.compose.ui.graphics.Color,
+    enabled: Boolean,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .widthIn(min = 64.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(horizontal = 6.dp, vertical = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(icon, contentDescription = null, tint = if (enabled) tint else TextTertiary, modifier = Modifier.size(22.dp))
+        Text(
+            text = label,
+            fontSize = 11.sp,
+            color = if (enabled) TextPrimary else TextTertiary,
+            maxLines = 1,
+            softWrap = false
+        )
     }
 }

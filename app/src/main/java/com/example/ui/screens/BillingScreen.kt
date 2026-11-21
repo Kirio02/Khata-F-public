@@ -694,20 +694,20 @@ fun BillingScreen(
                                 FilterChip(
                                     selected = receivedNowText == "0" || receivedNowText.isEmpty(),
                                     onClick = { receivedNowText = "0" },
-                                    label = { Text(text = "₹0 (Full Udhar)", fontSize = 11.sp) }
+                                    label = { Text(text = LanguageStrings.get("chip_full_udhar", currentLang), fontSize = 11.sp) }
                                 )
                                 if (totalAmount > 0) {
                                     FilterChip(
                                         selected = (receivedNowText.toDoubleOrNull() ?: 0.0) == totalAmount,
                                         onClick = { receivedNowText = totalAmount.toInt().toString() },
-                                        label = { Text(text = "Full (₹${totalAmount.toInt()})", fontSize = 11.sp) }
+                                        label = { Text(text = "${LanguageStrings.get("chip_full_paid", currentLang)} (₹${totalAmount.toInt()})", fontSize = 11.sp) }
                                     )
                                     val half = (totalAmount / 2.0).toInt()
                                     if (half > 0 && half != totalAmount.toInt()) {
                                         FilterChip(
                                             selected = (receivedNowText.toDoubleOrNull() ?: 0.0) == half.toDouble(),
                                             onClick = { receivedNowText = half.toString() },
-                                            label = { Text(text = "Half (₹$half)", fontSize = 11.sp) }
+                                            label = { Text(text = "${LanguageStrings.get("chip_half_paid", currentLang)} (₹$half)", fontSize = 11.sp) }
                                         )
                                     }
                                 }
@@ -1543,13 +1543,13 @@ fun BillingScreen(
                         fontSize = 15.sp
                     )
                     Text(
-                        text = "Total: ₹${"%.2f".format(inv.totalAmount)}",
+                        text = "${LanguageStrings.get("bill_saved_total", currentLang)}: ₹${"%.2f".format(inv.totalAmount)}",
                         fontWeight = FontWeight.Bold,
                         color = PrimaryBlue
                     )
                     if (lastSavedReceivedNow > 0) {
                         Text(
-                            text = "Received now: ₹${"%.2f".format(lastSavedReceivedNow)} (${inv.paymentMode})",
+                            text = "${LanguageStrings.get("bill_saved_received", currentLang)}: ₹${"%.2f".format(lastSavedReceivedNow)}",
                             color = JamaGreen,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -1562,7 +1562,7 @@ fun BillingScreen(
                         )
                     } else if (remUdhar > 0) {
                         Text(
-                            text = "Baaki Udhar in Khata: ₹${"%.2f".format(remUdhar)}",
+                            text = "${LanguageStrings.get("bill_saved_baaki", currentLang)}: ₹${"%.2f".format(remUdhar)}",
                             color = UdharRed,
                             fontWeight = FontWeight.SemiBold
                         )
