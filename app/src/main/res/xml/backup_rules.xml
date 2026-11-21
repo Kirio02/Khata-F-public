@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 11 and older: what Google auto-backup copies to the owner's Google account.
+     Only listed items are backed up. Keep this in sync with data_extraction_rules.xml. -->
+<full-backup-content>
+    <!-- Khata, bills, cashbook, shop profile (Room database and its WAL files) -->
+    <include domain="database" path="." />
+    <!-- Language and other plain settings -->
+    <include domain="sharedpref" path="ghanshyam_billing_prefs.xml" />
+    <!-- Shop logo used on bills -->
+    <include domain="file" path="shop_logo.jpg" />
+    <!-- Not included on purpose:
+         - encrypted_app_lock_prefs / encrypted_owner_settings / app_lock_security_prefs:
+           encrypted with a key that never leaves this phone, so they can't be restored
+           elsewhere and would break the app lock.
+         - files/attachments: photos can pass Android's 25 MB per-app limit, and going over
+           it skips the whole backup. -->
+</full-backup-content>
