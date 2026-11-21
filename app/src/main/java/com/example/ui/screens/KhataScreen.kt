@@ -138,6 +138,14 @@ fun KhataScreen(
     // Undo snackbar state
     var lastSavedTx by remember { mutableStateOf<Transaction?>(null) }
     var showUndoSnackbar by remember { mutableStateOf(false) }
+    // Hide the Undo bar after a few seconds so an old entry can't be undone by a stray tap later
+    LaunchedEffect(showUndoSnackbar, lastSavedTx) {
+        if (showUndoSnackbar) {
+            delay(6000)
+            showUndoSnackbar = false
+            lastSavedTx = null
+        }
+    }
 
     // Delivery Task Dialog
     var showAddDeliveryDialog by remember { mutableStateOf(false) }
@@ -296,19 +304,6 @@ fun KhataScreen(
 
     Scaffold(
         containerColor = SoftBackground,
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { showAddPartyDialog = true },
-                containerColor = PrimaryBlue,
-                contentColor = SurfaceWhite,
-                modifier = Modifier
-                    .minTouchTarget()
-                    .height(48.dp)
-                    .testTag("fab_add_party"),
-                icon = { Icon(Icons.Default.PersonAdd, contentDescription = LanguageStrings.get("add_party", lang)) },
-                text = { Text(text = LanguageStrings.get("add_party", lang), fontWeight = FontWeight.Bold, fontSize = 14.sp) }
-            )
-        },
         snackbarHost = {
             if (showUndoSnackbar && lastSavedTx != null) {
                 Snackbar(
@@ -860,6 +855,23 @@ fun KhataScreen(
                                 }
                             }
                         }
+
+                        // Add Party sits in the list (not floating) so it never covers the filters or a party row
+                        if (customers.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(AppSpacing.sm))
+                            OutlinedButton(
+                                onClick = { showAddPartyDialog = true },
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(min = 48.dp)
+                                    .testTag("fab_add_party")
+                            ) {
+                                Icon(Icons.Default.PersonAdd, contentDescription = null, tint = PrimaryBlue)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(text = LanguageStrings.get("add_party", lang), fontWeight = FontWeight.Bold, color = PrimaryBlue)
+                            }
+                        }
                     }
                 }
 
@@ -919,8 +931,11 @@ fun KhataScreen(
                                                 style = MaterialTheme.typography.titleMedium,
                                                 color = TextPrimary,
                                                 maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
+                                                overflow = TextOverflow.Ellipsis,
+                                                modifier = Modifier.weight(1f, fill = false)
                                             )
+                                            // Only suppliers get a tag; most parties are customers, so a tag there is just noise
+                                            if (isSupplier) {
                                             Spacer(modifier = Modifier.width(6.dp))
                                             Surface(
                                                 shape = RoundedCornerShape(4.dp),
@@ -932,8 +947,11 @@ fun KhataScreen(
                                                     fontSize = 10.sp,
                                                     fontWeight = FontWeight.SemiBold,
                                                     color = if (isSupplier) TextSecondary else PrimaryBlue,
+                                                    maxLines = 1,
+                                                    softWrap = false,
                                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                                 )
+                                            }
                                             }
                                         }
 
@@ -1153,9 +1171,10 @@ fun KhataScreen(
                                 ),
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(44.dp)
+                                    .height(44.dp),
+                                contentPadding = PaddingValues(horizontal = 4.dp)
                             ) {
-                                Text(text = modeTitle, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                Text(text = modeTitle, fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1, softWrap = false)
                             }
                         }
                     }

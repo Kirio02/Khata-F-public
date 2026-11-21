@@ -148,8 +148,13 @@ fun CustomerDetailScreen(
                                     text = currentCustomer.name,
                                     fontWeight = FontWeight.Bold,
                                     color = TextPrimary,
-                                    fontSize = 17.sp
+                                    fontSize = 17.sp,
+                                    maxLines = 2,
+                                    lineHeight = 20.sp,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f, fill = false)
                                 )
+                                if (isSupplier) {
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Surface(
                                     shape = RoundedCornerShape(4.dp),
@@ -161,8 +166,11 @@ fun CustomerDetailScreen(
                                         fontSize = 10.sp,
                                         fontWeight = FontWeight.SemiBold,
                                         color = if (isSupplier) TextSecondary else PrimaryBlue,
+                                        maxLines = 1,
+                                        softWrap = false,
                                         modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
                                     )
+                                }
                                 }
                             }
                             val displayPhone = PhoneUtil.toDisplay(currentCustomer.phone)
@@ -318,11 +326,12 @@ fun CustomerDetailScreen(
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = leftColor),
                             shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier.weight(1f).height(48.dp)
+                            modifier = Modifier.weight(1f).heightIn(min = 52.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
                         ) {
                             Icon(Icons.Default.ArrowUpward, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text(leftLabel, fontWeight = FontWeight.Bold)
+                            Text(leftLabel, fontWeight = FontWeight.Bold, textAlign = androidx.compose.ui.text.style.TextAlign.Center, lineHeight = 18.sp)
                         }
 
                         // Right Button
@@ -335,11 +344,12 @@ fun CustomerDetailScreen(
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = rightColor),
                             shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier.weight(1f).height(48.dp)
+                            modifier = Modifier.weight(1f).heightIn(min = 52.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
                         ) {
                             Icon(Icons.Default.ArrowDownward, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text(rightLabel, fontWeight = FontWeight.Bold)
+                            Text(rightLabel, fontWeight = FontWeight.Bold, textAlign = androidx.compose.ui.text.style.TextAlign.Center, lineHeight = 18.sp)
                         }
                     }
                 }
