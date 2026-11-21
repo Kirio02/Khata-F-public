@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,6 +36,7 @@ import com.example.ui.components.FullScreenAttachmentViewer
 import com.example.ui.components.VoiceNoteButton
 import com.example.ui.theme.*
 import com.example.ui.util.LanguageStrings
+import com.example.ui.util.AttachmentListSaver
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -62,15 +64,15 @@ fun CashbookScreen(
     val lang = currentLang
 
     // Book switcher: "CASH" or "BANK"
-    var selectedBook by remember { mutableStateOf("CASH") }
+    var selectedBook by rememberSaveable { mutableStateOf("CASH") }
 
     // Date filters: "TODAY", "WEEK", "MONTH", "ALL", "CUSTOM"
     var selectedDateFilter by remember { mutableStateOf("TODAY") }
     var customPickedDayMillis by remember { mutableStateOf<Long?>(null) }
 
     // Dialog & sheet states
-    var showAddDialog by remember { mutableStateOf(false) }
-    var addDialogType by remember { mutableStateOf("IN") }
+    var showAddDialog by rememberSaveable { mutableStateOf(false) }
+    var addDialogType by rememberSaveable { mutableStateOf("IN") }
     var entryToEdit by remember { mutableStateOf<CashEntry?>(null) }
     var viewingEditedInfo by remember { mutableStateOf<CashEntry?>(null) }
     var showBinSheet by remember { mutableStateOf(false) }
@@ -872,17 +874,18 @@ fun CashbookScreen(
 
     // Add Cash / Bank Entry Dialog
     if (showAddDialog) {
-        var amountText by remember { mutableStateOf("") }
-        var categoryText by remember { mutableStateOf("") }
-        var remarkText by remember { mutableStateOf("") }
-        var selectedMode by remember(selectedBook) {
+        // rememberSaveable: survive Android killing the app while the camera is open.
+        var amountText by rememberSaveable { mutableStateOf("") }
+        var categoryText by rememberSaveable { mutableStateOf("") }
+        var remarkText by rememberSaveable { mutableStateOf("") }
+        var selectedMode by rememberSaveable(selectedBook) {
             mutableStateOf(if (selectedBook == "CASH") "CASH" else "UPI")
         }
-        var referenceText by remember { mutableStateOf("") }
-        var chequeStatus by remember { mutableStateOf("PENDING") }
-        var partyNameText by remember { mutableStateOf("") }
-        var pendingAttachments by remember { mutableStateOf<List<Attachment>>(emptyList()) }
-        val tempOwnerId = remember { UUID.randomUUID().toString() }
+        var referenceText by rememberSaveable { mutableStateOf("") }
+        var chequeStatus by rememberSaveable { mutableStateOf("PENDING") }
+        var partyNameText by rememberSaveable { mutableStateOf("") }
+        var pendingAttachments by rememberSaveable(stateSaver = AttachmentListSaver) { mutableStateOf<List<Attachment>>(emptyList()) }
+        val tempOwnerId = rememberSaveable { UUID.randomUUID().toString() }
 
         val availableModes = if (selectedBook == "CASH") {
             listOf("CASH")

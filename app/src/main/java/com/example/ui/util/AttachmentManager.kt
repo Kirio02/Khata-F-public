@@ -293,3 +293,37 @@ object AttachmentManager {
         }
     }
 }
+
+/**
+ * Lets a not-yet-saved attachment list survive Android killing the app while the
+ * camera or gallery is open (common on low-RAM phones). The files are already on
+ * disk; only these few fields need to be kept.
+ */
+val AttachmentListSaver: androidx.compose.runtime.saveable.Saver<List<com.example.model.Attachment>, Any> =
+    androidx.compose.runtime.saveable.listSaver(
+        save = { list ->
+            list.map {
+                arrayListOf<Any>(
+                    it.id, it.ownerType, it.ownerId, it.filePath, it.thumbPath,
+                    it.mimeType, it.sizeBytes, it.caption, it.createdAt
+                )
+            }
+        },
+        restore = { saved ->
+            saved.map {
+                @Suppress("UNCHECKED_CAST")
+                val f = it as List<Any>
+                com.example.model.Attachment(
+                    id = f[0] as String,
+                    ownerType = f[1] as String,
+                    ownerId = f[2] as String,
+                    filePath = f[3] as String,
+                    thumbPath = f[4] as String,
+                    mimeType = f[5] as String,
+                    sizeBytes = f[6] as Long,
+                    caption = f[7] as String,
+                    createdAt = f[8] as Long
+                )
+            }
+        }
+    )

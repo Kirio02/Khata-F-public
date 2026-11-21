@@ -48,6 +48,7 @@ import com.example.model.*
 import com.example.ui.components.*
 import com.example.ui.theme.*
 import com.example.ui.util.LanguageStrings
+import com.example.ui.util.AttachmentListSaver
 import com.example.ui.util.PhoneUtil
 import kotlinx.coroutines.launch
 import java.io.File
@@ -85,7 +86,7 @@ fun BillingScreen(
     var billNote by rememberSaveable { mutableStateOf("") }
 
     // Chit photos attachments
-    var pendingChitAttachments by remember { mutableStateOf<List<Attachment>>(emptyList()) }
+    var pendingChitAttachments by rememberSaveable(stateSaver = AttachmentListSaver) { mutableStateOf<List<Attachment>>(emptyList()) }
 
     // Received now amount and payment mode
     var receivedNowText by rememberSaveable { mutableStateOf("0") }

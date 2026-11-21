@@ -18,6 +18,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,6 +35,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.ui.theme.*
 import com.example.ui.util.LanguageStrings
+import com.example.ui.util.AttachmentListSaver
 import com.example.ui.util.PhoneUtil
 import com.example.ui.util.StatementDateRange
 import com.example.ui.util.StatementFilter
@@ -78,8 +80,8 @@ fun CustomerDetailScreen(
     val selectedBillIds = remember { mutableStateListOf<String>() }
 
     // Dialogs state
-    var showAddTxDialog by remember { mutableStateOf(false) }
-    var txTypeToAdd by remember { mutableStateOf("GAVE") } // GAVE or GOT
+    var showAddTxDialog by rememberSaveable { mutableStateOf(false) }
+    var txTypeToAdd by rememberSaveable { mutableStateOf("GAVE") } // GAVE or GOT
 
     var billToMarkReceived by remember { mutableStateOf<Transaction?>(null) }
     var showMarkAllReceivedDialog by remember { mutableStateOf(false) }
@@ -957,15 +959,17 @@ fun CustomerDetailScreen(
 
     // Add Transaction Dialog (Udhar / Jama)
     if (showAddTxDialog) {
-        var amountText by remember { mutableStateOf("") }
-        var noteText by remember { mutableStateOf("") }
-        var onlyInKhata by remember { mutableStateOf(false) }
-        var showMoreOptions by remember { mutableStateOf(false) }
-        var selectedPaymentMode by remember { mutableStateOf("CASH") }
-        var pendingAttachments by remember { mutableStateOf<List<Attachment>>(emptyList()) }
-        val tempOwnerId = remember { UUID.randomUUID().toString() }
+        // rememberSaveable: the form must survive Android killing the app while the
+        // camera is open, or the photo and typed amount are lost.
+        var amountText by rememberSaveable { mutableStateOf("") }
+        var noteText by rememberSaveable { mutableStateOf("") }
+        var onlyInKhata by rememberSaveable { mutableStateOf(false) }
+        var showMoreOptions by rememberSaveable { mutableStateOf(false) }
+        var selectedPaymentMode by rememberSaveable { mutableStateOf("CASH") }
+        var pendingAttachments by rememberSaveable(stateSaver = AttachmentListSaver) { mutableStateOf<List<Attachment>>(emptyList()) }
+        val tempOwnerId = rememberSaveable { UUID.randomUUID().toString() }
 
-        var selectedDueDateDays by remember { mutableStateOf(0) }
+        var selectedDueDateDays by rememberSaveable { mutableStateOf(0) }
 
         val isGave = txTypeToAdd == "GAVE"
         val isCreditEntry = if (isSupplier) txTypeToAdd == "GOT" else txTypeToAdd == "GAVE"
