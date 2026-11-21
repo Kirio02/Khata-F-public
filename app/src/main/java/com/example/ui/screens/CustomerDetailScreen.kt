@@ -1753,6 +1753,8 @@ fun CustomerDetailScreen(
             onDismiss = { viewingAttachments = null },
             onDelete = { attToDelete ->
                 repository.deleteAttachment(attToDelete.id)
+                // Drop it from the open viewer too, or it keeps showing the deleted photo.
+                viewingAttachments = attList.filter { it.id != attToDelete.id }.ifEmpty { null }
             },
             onUpdateCaption = { attToUpdate, newCaption ->
                 repository.updateAttachmentCaption(attToUpdate.id, newCaption)

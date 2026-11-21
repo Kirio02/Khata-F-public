@@ -1151,7 +1151,7 @@ fun ShopProfileScreen(
                                 val totalCashIn = repository.cashbook.value.filter { it.type == "IN" }.sumOf { it.amount }
                                 val totalCashOut = repository.cashbook.value.filter { it.type == "OUT" }.sumOf { it.amount }
                                 val cashInHand = (totalCashIn - totalCashOut).coerceAtLeast(0.0)
-                                val todayCredit = repository.transactions.value.filter { it.date >= startOfDay && it.type == "GAVE" }.sumOf { it.amount }
+                                val todayCredit = repository.transactions.value.filter { it.date >= startOfDay && it.type == "GAVE" && !com.example.data.OpeningBalance.isOpeningNote(it.note) }.sumOf { it.amount }
 
                                 val topDebtors = repository.customers.value.map {
                                     it.name to repository.getCustomerBalance(it.id)

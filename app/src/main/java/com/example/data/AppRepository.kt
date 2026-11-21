@@ -787,7 +787,8 @@ class AppRepository(
         cal.set(java.util.Calendar.MILLISECOND, 999)
         val endOfDay = cal.timeInMillis
 
-        val todayTxs = transactions.value.filter { it.date in startOfDay..endOfDay }
+        // Opening balances are old dues carried over, not today's business.
+        val todayTxs = transactions.value.filter { it.date in startOfDay..endOfDay && !OpeningBalance.isOpeningNote(it.note) }
         val todayGot = todayTxs.filter { it.type == "GOT" }.sumOf { it.amount }
         val todayGave = todayTxs.filter { it.type == "GAVE" }.sumOf { it.amount }
 

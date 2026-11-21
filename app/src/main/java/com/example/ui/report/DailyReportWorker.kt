@@ -96,7 +96,7 @@ class DailyReportWorker(
 
             // 3. Transactions today
             val allTx = db.transactionDao().getAllList()
-            val todayCreditGiven = allTx.filter { it.date in startOfDay until endOfDay && it.type == "GAVE" }.sumOf { it.amount }
+            val todayCreditGiven = allTx.filter { it.date in startOfDay until endOfDay && it.type == "GAVE" && !com.example.data.OpeningBalance.isOpeningNote(it.note) }.sumOf { it.amount }
 
             // 4. Top 5 parties to chase & Overdue parties (positive gave - got = party owes us)
             val allCustomers = db.customerDao().getAllList()

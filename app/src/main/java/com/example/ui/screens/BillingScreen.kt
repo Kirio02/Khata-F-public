@@ -1608,7 +1608,7 @@ fun BillingScreen(
             onDismiss = { viewerAttachmentList = null },
             onDelete = { attToDelete ->
                 repository.deleteAttachment(attToDelete.id)
-                viewerAttachmentList = viewerAttachmentList?.filter { it.id != attToDelete.id }
+                viewerAttachmentList = viewerAttachmentList?.filter { it.id != attToDelete.id }?.ifEmpty { null }
                 if (viewerAttachmentList.isNullOrEmpty()) {
                     viewerAttachmentList = null
                 }
