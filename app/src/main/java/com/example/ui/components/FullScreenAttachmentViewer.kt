@@ -70,8 +70,9 @@ fun FullScreenAttachmentViewer(
 
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
     ) {
+        FullScreenDialogWindow()
         Box(
             modifier = Modifier
                 .fillMaxSize()

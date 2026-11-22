@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import androidx.compose.foundation.verticalScroll
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.widget.Toast
@@ -329,7 +330,7 @@ fun AttachmentPickerStrip(
                 )
             },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     // Option 1: Camera
                     ListItem(
                         headlineContent = {

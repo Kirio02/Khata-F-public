@@ -185,10 +185,14 @@ fun GhanshyamApp(
         } else null
     }
 
+    // In landscape the screen is only ~340dp tall: give that room to the content.
+    val showHeader = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp >= 480
+    StatusBarIcons(light = showHeader)
+
     Scaffold(
         containerColor = SoftBackground,
         topBar = {
-            Surface(
+            if (showHeader) Surface(
                 color = BrandCharcoal,
                 shape = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp),
                 shadowElevation = 3.dp
@@ -228,6 +232,7 @@ fun GhanshyamApp(
                                     color = GoldAccent,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 10.sp,
+                                    lineHeight = 11.sp,
                                     maxLines = 1,
                                     softWrap = false,
                                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
@@ -237,7 +242,12 @@ fun GhanshyamApp(
                                     style = MaterialTheme.typography.titleMedium.copy(fontFamily = BrandSerifFontFamily),
                                     fontWeight = FontWeight.Bold,
                                     color = SurfaceWhite,
-                                    fontSize = 15.sp,
+                                    // The 64dp bar has no room for a second line, so the name follows the
+                                    // phone font only until it would stop fitting on one.
+                                    fontSize = with(androidx.compose.ui.platform.LocalDensity.current) {
+                                        minOf(15.sp.toPx(), 15.dp.toPx()).toSp()
+                                    },
+                                    letterSpacing = 0.sp,
                                     maxLines = 1,
                                     softWrap = false,
                                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
@@ -303,8 +313,6 @@ fun GhanshyamApp(
                     }
 
                     Spacer(modifier = Modifier.width(8.dp))
-
-                    Spacer(modifier = Modifier.width(8.dp))
                 }
             )
         }
@@ -345,7 +353,11 @@ fun GhanshyamApp(
                             Text(
                                 text = label,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                fontSize = 12.sp,
+                                // Four tabs share ~340dp, so this label follows the phone font only up to 14dp.
+                                fontSize = with(androidx.compose.ui.platform.LocalDensity.current) {
+                                    minOf(12.sp.toPx(), 14.dp.toPx()).toSp()
+                                },
+                                letterSpacing = 0.sp,
                                 maxLines = 1,
                                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                                 color = if (isSelected) PrimaryBlue else TextSecondary
@@ -368,6 +380,9 @@ fun GhanshyamApp(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                // Each tab has its own Scaffold: without this they add the system bars a second time.
+                .consumeWindowInsets(padding)
+                .imePadding()
         ) {
             // Persistent Error Banner when migration failed or writes are blocked (cannot be simply dismissed)
             if (isMigrationBlocked || migrationError != null) {
@@ -507,7 +522,7 @@ fun GhanshyamApp(
                 )
             },
             text = {
-                Column {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                     Text(
                         text = LanguageStrings.get("start_fresh_dialog_desc", currentLanguage),
                         color = TextSecondary,
@@ -548,5 +563,17 @@ fun GhanshyamApp(
                 }
             }
         )
+    }
+}
+
+/** White clock and battery icons over the dark header; dark again on the white screens. */
+@Composable
+private fun StatusBarIcons(light: Boolean) {
+    val view = androidx.compose.ui.platform.LocalView.current
+    val window = (view.context as? android.app.Activity)?.window ?: return
+    val controller = androidx.core.view.WindowCompat.getInsetsController(window, view)
+    SideEffect { controller.isAppearanceLightStatusBars = !light }
+    DisposableEffect(controller) {
+        onDispose { controller.isAppearanceLightStatusBars = true }
     }
 }

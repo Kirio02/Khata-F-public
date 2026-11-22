@@ -1,5 +1,10 @@
+@file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+
 package com.example.ui.screens
 
+import androidx.compose.foundation.verticalScroll
+import com.example.ui.util.EntryDate
+import com.example.ui.components.EntryDateButton
 import android.app.DatePickerDialog
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -210,29 +215,26 @@ fun CashbookScreen(
                     Surface(
                         shape = RoundedCornerShape(24.dp),
                         color = SoftBackground,
-                        modifier = Modifier.height(38.dp)
+                        modifier = Modifier.weight(1f)
                     ) {
                         Row(modifier = Modifier.padding(3.dp)) {
                             Surface(
                                 shape = RoundedCornerShape(20.dp),
                                 color = if (selectedBook == "CASH") PrimaryBlue else SoftBackground,
                                 modifier = Modifier
+                                    .weight(1f)
                                     .clip(RoundedCornerShape(20.dp))
                                     .clickable { selectedBook = "CASH" }
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                    horizontalArrangement = Arrangement.Center,
+                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
                                 ) {
-                                    Icon(
-                                        Icons.Default.AccountBalanceWallet,
-                                        contentDescription = LanguageStrings.get("book_cash", lang),
-                                        tint = if (selectedBook == "CASH") SurfaceWhite else TextSecondary,
-                                        modifier = Modifier.size(15.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
                                     Text(
                                         text = LanguageStrings.get("book_cash", lang),
+                                        letterSpacing = 0.sp,
+                                        maxLines = 1,
                                         style = MaterialTheme.typography.labelMedium,
                                         fontWeight = FontWeight.Bold,
                                         color = if (selectedBook == "CASH") SurfaceWhite else TextSecondary
@@ -246,22 +248,19 @@ fun CashbookScreen(
                                 shape = RoundedCornerShape(20.dp),
                                 color = if (selectedBook == "BANK") PrimaryBlue else SoftBackground,
                                 modifier = Modifier
+                                    .weight(1f)
                                     .clip(RoundedCornerShape(20.dp))
                                     .clickable { selectedBook = "BANK" }
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                    horizontalArrangement = Arrangement.Center,
+                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
                                 ) {
-                                    Icon(
-                                        Icons.Default.AccountBalance,
-                                        contentDescription = LanguageStrings.get("book_bank", lang),
-                                        tint = if (selectedBook == "BANK") SurfaceWhite else TextSecondary,
-                                        modifier = Modifier.size(15.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
                                     Text(
                                         text = LanguageStrings.get("book_bank", lang),
+                                        letterSpacing = 0.sp,
+                                        maxLines = 1,
                                         style = MaterialTheme.typography.labelMedium,
                                         fontWeight = FontWeight.Bold,
                                         color = if (selectedBook == "BANK") SurfaceWhite else TextSecondary
@@ -288,18 +287,6 @@ fun CashbookScreen(
                                     modifier = Modifier.size(22.dp)
                                 )
                             }
-                        }
-
-                        IconButton(
-                            onClick = { openDatePicker() },
-                            modifier = Modifier.size(38.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.CalendarToday,
-                                contentDescription = LanguageStrings.get("jump_to_date_btn", lang),
-                                tint = PrimaryBlue,
-                                modifier = Modifier.size(20.dp)
-                            )
                         }
 
                         IconButton(
@@ -336,6 +323,12 @@ fun CashbookScreen(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // First in the row, so the calendar is always on screen
+                    AssistChip(
+                        onClick = { openDatePicker() },
+                        leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                        label = { Text(text = LanguageStrings.get("jump_to_date_btn", lang), fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false) }
+                    )
                     FilterChip(
                         selected = selectedDateFilter == "ALL",
                         onClick = {
@@ -607,13 +600,13 @@ fun CashbookScreen(
 
                                 Spacer(modifier = Modifier.height(4.dp))
 
-                                // Opening, Total In, Total Out, Closing 4-metrics row
-                                Row(
+                                // Opening, Total In, Total Out, Closing (two per line: four amounts never fit)
+                                FlowRow(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
+                                    maxItemsInEachRow = 2,
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
                                 ) {
-                                    Column {
+                                    Column(modifier = Modifier.weight(1f)) {
                                         Text(
                                             text = LanguageStrings.get("day_opening_short", lang),
                                             style = MaterialTheme.typography.labelSmall,
@@ -628,7 +621,7 @@ fun CashbookScreen(
                                         )
                                     }
 
-                                    Column {
+                                    Column(modifier = Modifier.weight(1f)) {
                                         Text(
                                             text = LanguageStrings.get("day_in_short", lang),
                                             style = MaterialTheme.typography.labelSmall,
@@ -643,7 +636,7 @@ fun CashbookScreen(
                                         )
                                     }
 
-                                    Column {
+                                    Column(modifier = Modifier.weight(1f)) {
                                         Text(
                                             text = LanguageStrings.get("day_out_short", lang),
                                             style = MaterialTheme.typography.labelSmall,
@@ -658,7 +651,7 @@ fun CashbookScreen(
                                         )
                                     }
 
-                                    Column {
+                                    Column(modifier = Modifier.weight(1f)) {
                                         Text(
                                             text = LanguageStrings.get("day_closing_short", lang),
                                             style = MaterialTheme.typography.labelSmall,
@@ -887,6 +880,7 @@ fun CashbookScreen(
         var pendingAttachments by rememberSaveable(stateSaver = AttachmentListSaver) { mutableStateOf<List<Attachment>>(emptyList()) }
         val tempOwnerId = rememberSaveable { UUID.randomUUID().toString() }
 
+        var entryDate by rememberSaveable { mutableStateOf(EntryDate.NOW) }
         val availableModes = if (selectedBook == "CASH") {
             listOf("CASH")
         } else {
@@ -902,7 +896,7 @@ fun CashbookScreen(
                 )
             },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     OutlinedTextField(
                         value = amountText,
                         onValueChange = { amountText = it },
@@ -912,13 +906,15 @@ fun CashbookScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
 
+                    EntryDateButton(value = entryDate, lang = lang, onChange = { entryDate = it })
+
                     // Payment Mode selector
                     Text(
                         text = LanguageStrings.get("payment_mode_label", lang),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold
                     )
-                    Row(
+                    FlowRow(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
@@ -926,8 +922,7 @@ fun CashbookScreen(
                             FilterChip(
                                 selected = selectedMode == mode,
                                 onClick = { selectedMode = mode },
-                                label = { Text(text = mode, fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                                modifier = Modifier.weight(1f)
+                                label = { Text(text = mode, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false) }
                             )
                         }
                     }
@@ -1031,10 +1026,16 @@ fun CashbookScreen(
                                 bookType = selectedBook,
                                 reference = referenceText.trim(),
                                 chequeStatus = if (selectedMode == "CHEQUE") chequeStatus else "",
-                                partyName = partyNameText.trim()
+                                partyName = partyNameText.trim(),
+                                date = EntryDate.resolve(entryDate)
                             )
                             if (pendingAttachments.isNotEmpty()) {
                                 repository.addAttachments(pendingAttachments.map { it.copy(ownerId = newEntry.id) })
+                            }
+                            if (entryDate != EntryDate.NOW) {
+                                // Show that day, otherwise a back-dated entry seems to vanish under "Aaj"
+                                customPickedDayMillis = entryDate
+                                selectedDateFilter = "CUSTOM"
                             }
                             showAddDialog = false
                         }
@@ -1060,6 +1061,7 @@ fun CashbookScreen(
         var editReference by remember(entry.id) { mutableStateOf(entry.reference) }
         var editChequeStatus by remember(entry.id) { mutableStateOf(if (entry.chequeStatus.isNotBlank()) entry.chequeStatus else "PENDING") }
         var editPartyName by remember(entry.id) { mutableStateOf(entry.partyName) }
+        var editDate by remember(entry.id) { mutableStateOf(entry.date) }
 
         val editAvailableModes = if (entry.bookType == "CASH") {
             listOf("CASH")
@@ -1076,7 +1078,7 @@ fun CashbookScreen(
                 )
             },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     OutlinedTextField(
                         value = editAmount,
                         onValueChange = { editAmount = it },
@@ -1085,12 +1087,17 @@ fun CashbookScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
 
+                    // A bill's cash line takes its date from the bill, so it isn't changed here
+                    if (entry.source != "invoice") {
+                        EntryDateButton(value = editDate, lang = lang, onChange = { editDate = it })
+                    }
+
                     Text(
                         text = LanguageStrings.get("payment_mode_label", lang),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold
                     )
-                    Row(
+                    FlowRow(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
@@ -1098,8 +1105,7 @@ fun CashbookScreen(
                             FilterChip(
                                 selected = editMode == mode,
                                 onClick = { editMode = mode },
-                                label = { Text(text = mode, fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                                modifier = Modifier.weight(1f)
+                                label = { Text(text = mode, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false) }
                             )
                         }
                     }
@@ -1174,7 +1180,7 @@ fun CashbookScreen(
                                 id = entry.id,
                                 amount = parsed,
                                 remark = editRemark.trim(),
-                                date = entry.date,
+                                date = editDate,
                                 paymentMode = editMode,
                                 bookType = entry.bookType,
                                 reference = editReference.trim(),
@@ -1209,7 +1215,7 @@ fun CashbookScreen(
                 )
             },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
                         text = "${LanguageStrings.get("original_amount_was", lang)}: ${formatIndianCurrency(entry.originalAmount ?: entry.amount)}",
                         style = MaterialTheme.typography.bodyMedium,

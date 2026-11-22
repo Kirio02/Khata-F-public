@@ -1,5 +1,10 @@
+@file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+
 package com.example.ui.screens
 
+import com.example.ui.util.EntryDate
+import com.example.ui.components.DueDateChip
+import com.example.ui.components.EntryDateButton
 import android.Manifest
 import android.app.Activity
 import android.content.Context
@@ -82,7 +87,7 @@ fun BillingScreen(
     var partySearchQuery by rememberSaveable { mutableStateOf("") }
 
     var billAmountText by rememberSaveable { mutableStateOf("") }
-    var billDate by rememberSaveable { mutableStateOf(System.currentTimeMillis()) }
+    var billDate by rememberSaveable { mutableStateOf(EntryDate.NOW) }
     var billNote by rememberSaveable { mutableStateOf("") }
 
     // Chit photos attachments
@@ -94,6 +99,7 @@ fun BillingScreen(
 
     // Optional Due date in days (0: none, 7, 15, 30)
     var selectedDueDateDays by rememberSaveable { mutableStateOf(0) }
+    var pickedDueDate by rememberSaveable { mutableStateOf(EntryDate.NOW) }
 
     // Dialog & UI states
     var showQuickAddPartyDialog by rememberSaveable { mutableStateOf(false) }
@@ -272,9 +278,9 @@ fun BillingScreen(
                                 // Selected Party Badge Card
                                 val balance = if (selectedCustomerId.isNotBlank()) repository.getCustomerBalance(selectedCustomerId) else 0.0
                                 val balanceText = when {
-                                    balance > 0.01 -> "Lena (Udhar): ₹${"%.2f".format(balance)}"
-                                    balance < -0.01 -> "Dena (Advance): ₹${"%.2f".format(-balance)}"
-                                    else -> "Hisaab Clear"
+                                    balance > 0.01 -> "${LanguageStrings.get("party_lena", currentLang)}: ₹${"%.2f".format(balance)}"
+                                    balance < -0.01 -> "${LanguageStrings.get("party_dena", currentLang)}: ₹${"%.2f".format(-balance)}"
+                                    else -> LanguageStrings.get("party_clear", currentLang)
                                 }
                                 val balanceColor = when {
                                     balance > 0.01 -> UdharRed
@@ -282,20 +288,20 @@ fun BillingScreen(
                                     else -> TextSecondary
                                 }
 
-                                Row(
+                                // Stacked: side by side, the balance left the name only a few letters wide.
+                                Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clip(RoundedCornerShape(10.dp))
                                         .background(ChipActiveBg)
                                         .padding(12.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
                                 ) {
-                                    Column(modifier = Modifier.weight(1f)) {
+                                    Column(modifier = Modifier.fillMaxWidth()) {
                                         Text(
                                             text = selectedCustomerName,
                                             fontWeight = FontWeight.Bold,
-                                            fontSize = 15.sp,
+                                            fontSize = 15.sp, lineHeight = 18.sp,
                                             color = TextPrimary
                                         )
                                         if (selectedCustomerPhone.isNotBlank()) {
@@ -320,7 +326,7 @@ fun BillingScreen(
                                 OutlinedTextField(
                                     value = partySearchQuery,
                                     onValueChange = { partySearchQuery = it },
-                                    placeholder = { Text(text = LanguageStrings.get("search_or_pick_party", currentLang)) },
+                                    placeholder = { Text(text = LanguageStrings.get("search_or_pick_party", currentLang), fontSize = 13.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
                                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = TextSecondary) },
                                     singleLine = true,
                                     modifier = Modifier.fillMaxWidth()
@@ -419,7 +425,7 @@ fun BillingScreen(
                                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                         matchingCustomers.forEach { cust ->
                                             val bal = repository.getCustomerBalance(cust.id)
-                                            val balLabel = if (bal > 0) "Lena: ₹${"%.0f".format(bal)}" else ""
+                                            val balLabel = if (bal > 0) "${LanguageStrings.get("party_lena", currentLang)}: ₹${"%.0f".format(bal)}" else ""
                                             Row(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
@@ -435,7 +441,7 @@ fun BillingScreen(
                                                 horizontalArrangement = Arrangement.SpaceBetween,
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
-                                                Column {
+                                                Column(modifier = Modifier.weight(1f)) {
                                                     Text(text = cust.name, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
                                                     if (cust.phone.isNotBlank()) {
                                                         Text(text = PhoneUtil.toDisplay(cust.phone), fontSize = 11.sp, color = TextSecondary)
@@ -546,36 +552,23 @@ fun BillingScreen(
                     ) {
                         Column(modifier = Modifier.padding(14.dp)) {
                             // Date row
-                            val dateStr = SimpleDateFormat("dd MMM yyyy", Locale.US).format(Date(billDate))
                             val dayKeyFormat = SimpleDateFormat("yyyyMMdd", Locale.US)
-                            val billDayKey = dayKeyFormat.format(Date(billDate))
+                            val billDayKey = dayKeyFormat.format(Date(EntryDate.resolve(billDate)))
                             val isBillToday = billDayKey == dayKeyFormat.format(Date())
                             val isBillYesterday = billDayKey == dayKeyFormat.format(Date(System.currentTimeMillis() - (24 * 3600 * 1000L)))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(Icons.Default.CalendarToday, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = LanguageStrings.get("bill_date_label", currentLang) + ": $dateStr",
-                                    fontWeight = FontWeight.SemiBold,
-                                    fontSize = 13.sp,
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
+                            EntryDateButton(value = billDate, lang = currentLang, onChange = { billDate = it })
 
                             Spacer(modifier = Modifier.height(6.dp))
 
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 FilterChip(
                                     selected = isBillToday,
-                                    onClick = { billDate = System.currentTimeMillis() },
+                                    onClick = { billDate = EntryDate.NOW },
                                     label = { Text(text = LanguageStrings.get("date_today_label", currentLang), fontSize = 12.sp, maxLines = 1, softWrap = false) }
                                 )
                                 FilterChip(
                                     selected = isBillYesterday,
-                                    onClick = { billDate = System.currentTimeMillis() - (24 * 3600 * 1000L) },
+                                    onClick = { billDate = EntryDate.daysAgo(1) },
                                     label = { Text(text = LanguageStrings.get("date_yesterday_label", currentLang), fontSize = 12.sp, maxLines = 1, softWrap = false) }
                                 )
                             }
@@ -586,7 +579,7 @@ fun BillingScreen(
                             OutlinedTextField(
                                 value = billNote,
                                 onValueChange = { billNote = it },
-                                placeholder = { Text(text = LanguageStrings.get("short_note_hint", currentLang)) },
+                                placeholder = { Text(text = LanguageStrings.get("short_note_hint", currentLang), fontSize = 13.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
                                 singleLine = true,
                                 trailingIcon = {
                                     IconButton(
@@ -723,12 +716,9 @@ fun BillingScreen(
                             )
                             Spacer(modifier = Modifier.height(6.dp))
 
-                            // Buttons keep their text on ONE line; on large phone fonts the row scrolls sideways
-                            // instead of squeezing the words into single letters.
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .horizontalScroll(rememberScrollState()),
+                            // Buttons keep their text on ONE line; on large phone fonts they wrap to a second row.
+                            FlowRow(
+                                modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 listOf("CASH", "UPI", "BANK").forEach { mode ->
@@ -814,12 +804,12 @@ fun BillingScreen(
 
                             Spacer(modifier = Modifier.height(8.dp))
 
-                            Row(
+                            FlowRow(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 listOf(0, 7, 15, 30).forEach { days ->
-                                    val isSelected = selectedDueDateDays == days
+                                    val isSelected = pickedDueDate == EntryDate.NOW && selectedDueDateDays == days
                                     val label = when (days) {
                                         7 -> LanguageStrings.get("chip_7_days", currentLang)
                                         15 -> LanguageStrings.get("chip_15_days", currentLang)
@@ -828,18 +818,24 @@ fun BillingScreen(
                                     }
                                     FilterChip(
                                         selected = isSelected,
-                                        onClick = { selectedDueDateDays = days },
-                                        label = { Text(text = label, fontSize = 12.sp) }
+                                        onClick = {
+                                            selectedDueDateDays = days
+                                            pickedDueDate = EntryDate.NOW
+                                        },
+                                        label = { Text(text = label, fontSize = 12.sp, maxLines = 1, softWrap = false) }
                                     )
                                 }
+                                DueDateChip(
+                                    value = pickedDueDate,
+                                    entryDate = EntryDate.resolve(billDate),
+                                    lang = currentLang,
+                                    onChange = { pickedDueDate = it }
+                                )
                             }
 
-                            if (selectedDueDateDays > 0) {
-                                val cal = Calendar.getInstance().apply {
-                                    timeInMillis = billDate
-                                    add(Calendar.DAY_OF_YEAR, selectedDueDateDays)
-                                }
-                                val dueDateStr = SimpleDateFormat("dd MMM yyyy", Locale.US).format(cal.time)
+                            val duePreview = EntryDate.due(EntryDate.resolve(billDate), selectedDueDateDays, pickedDueDate)
+                            if (duePreview > 0L) {
+                                val dueDateStr = SimpleDateFormat("dd MMM yyyy", Locale.US).format(Date(duePreview))
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
                                     text = LanguageStrings.get("due_date_prefix", currentLang) + " $dueDateStr",
@@ -857,15 +853,10 @@ fun BillingScreen(
                         onClick = {
                             coroutineScope.launch {
                                 try {
-                                    val computedDueDate = if (selectedDueDateDays > 0) {
-                                        val cal = Calendar.getInstance().apply {
-                                            timeInMillis = billDate
-                                            add(Calendar.DAY_OF_YEAR, selectedDueDateDays)
-                                        }
-                                        cal.timeInMillis
-                                    } else 0L
+                                    val savedBillDate = EntryDate.resolve(billDate)
+                                    val computedDueDate = EntryDate.due(savedBillDate, selectedDueDateDays, pickedDueDate)
 
-                                    val dueString = if (selectedDueDateDays > 0) {
+                                    val dueString = if (computedDueDate > 0L) {
                                         " | Due: " + SimpleDateFormat("dd MMM yyyy", Locale.US).format(java.util.Date(computedDueDate))
                                     } else ""
 
@@ -873,7 +864,7 @@ fun BillingScreen(
 
                                     val draftInvoice = Invoice(
                                         billNumber = "",
-                                        date = billDate,
+                                        date = savedBillDate,
                                         customerId = selectedCustomerId,
                                         customerName = selectedCustomerName.ifBlank { "Cash Customer" },
                                         customerPhone = selectedCustomerPhone,
@@ -917,6 +908,8 @@ fun BillingScreen(
                                     receivedNowText = "0"
                                     pendingChitAttachments = emptyList()
                                     selectedDueDateDays = 0
+                                    pickedDueDate = EntryDate.NOW
+                                    billDate = EntryDate.NOW // a back-date must not stick to the next bill
                                 } catch (e: Exception) {
                                     Toast.makeText(context, "Failed to save bill: ${e.message}", Toast.LENGTH_LONG).show()
                                 }
@@ -1313,7 +1306,7 @@ fun BillingScreen(
                 )
             },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     OutlinedTextField(
                         value = quickAddName,
                         onValueChange = { quickAddName = it },
@@ -1483,7 +1476,7 @@ fun BillingScreen(
                 )
             },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
                         text = LanguageStrings.get("cancel_bill_desc", currentLang),
                         style = MaterialTheme.typography.bodySmall,
@@ -1535,7 +1528,7 @@ fun BillingScreen(
                 )
             },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     val pfx = LanguageStrings.get("bill_card_prefix", currentLang)
                     Text(
                         text = "$pfx${inv.billNumber} (${inv.customerName})",

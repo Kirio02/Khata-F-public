@@ -1165,7 +1165,8 @@ class AppRepository(
         billIds: List<String>,
         paymentMode: String = "CASH",
         addToCashbook: Boolean = true,
-        onlyInKhata: Boolean = false
+        onlyInKhata: Boolean = false,
+        date: Long = System.currentTimeMillis()
     ) {
         checkWritesAllowed()
         // Outstanding amounts are taken once, before any new payment is added.
@@ -1188,7 +1189,7 @@ class AppRepository(
                             amount = outstanding,
                             type = paymentType,
                             note = if (bill.billNumber.isNotBlank()) "Received for Bill ${bill.billNumber}" else "Received for bill",
-                            date = System.currentTimeMillis(),
+                            date = date,
                             paymentMode = paymentMode,
                             linkedToTxId = billId,
                             isCompleted = true,
@@ -1209,7 +1210,7 @@ class AppRepository(
                                     amount = outstanding,
                                     category = "Khata Settlement",
                                     remark = remark,
-                                    date = System.currentTimeMillis(),
+                                    date = date,
                                     paymentMode = paymentMode,
                                     linkedId = paymentTxId,
                                     source = "khata",
@@ -1289,6 +1290,21 @@ class AppRepository(
                 )
                 database.transactionDao().update(updated)
 
+                // A Naya Bill is saved as bill + "received now" payment + cash line + invoice, all with
+                // one timestamp. Re-dating the bill moves those along; later payments keep their own date.
+                if (date != current.date && current.billNumber.isNotBlank() && current.linkedToTxId == null) {
+                    database.transactionDao().getByLinkedToTxId(txId)
+                        .filter { it.date == current.date }
+                        .forEach { database.transactionDao().update(it.copy(date = date)) }
+                    val invoice = database.invoiceDao().getAllWithItemsList().map { it.invoice }
+                        .firstOrNull { it.billNumber == current.billNumber && it.date == current.date }
+                    if (invoice != null) {
+                        database.invoiceDao().update(invoice.copy(date = date))
+                        database.cashbookDao().getByLinkedId(invoice.id)
+                            ?.let { database.cashbookDao().update(it.copy(date = date)) }
+                    }
+                }
+
                 val linkedCash = database.cashbookDao().getByLinkedId(txId)
                 if (linkedCash != null) {
                     val orig = linkedCash.originalAmount ?: if (linkedCash.amount != updated.amount) linkedCash.amount else null
@@ -1308,6 +1324,7 @@ class AppRepository(
             }
             _transactions.value = database.transactionDao().getAllList().map { it.toDomain() }
             _cashbook.value = database.cashbookDao().getAllList().map { it.toDomain() }
+            _invoices.value = database.invoiceDao().getAllWithItemsList().map { it.toDomain() }
         }
     }
 
@@ -1532,6 +1549,12 @@ class AppRepository(
         }
     }
 
+    /** A walk-in sale must never open a khata party, whichever language the button was shown in. */
+    private fun isWalkInCustomer(name: String): Boolean =
+        name == "Cash Customer" || com.example.model.AppLanguage.entries.any {
+            name == com.example.ui.util.LanguageStrings.get("quick_cash_customer", it)
+        }
+
     fun createInvoice(
         invoice: Invoice,
         receivedNow: Double = if (invoice.paymentMode in listOf("CASH", "UPI", "BANK")) invoice.totalAmount else 0.0,
@@ -1558,7 +1581,7 @@ class AppRepository(
 
                 // 3. Customer linking
                 var finalCustomerId = invoice.customerId
-                if (finalCustomerId.isBlank() && invoice.customerName.isNotBlank() && invoice.customerName != "Cash Customer") {
+                if (finalCustomerId.isBlank() && invoice.customerName.isNotBlank() && !isWalkInCustomer(invoice.customerName)) {
                     val existingCust = database.customerDao().getAllList().find { it.name.equals(invoice.customerName, ignoreCase = true) }
                     if (existingCust != null) {
                         finalCustomerId = existingCust.id

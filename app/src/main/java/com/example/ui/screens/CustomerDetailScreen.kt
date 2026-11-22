@@ -1,5 +1,12 @@
+@file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+
 package com.example.ui.screens
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import com.example.ui.util.EntryDate
+import com.example.ui.components.DueDateChip
+import com.example.ui.components.EntryDateButton
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -587,7 +594,7 @@ fun CustomerDetailScreen(
                                             }
 
                                             Column {
-                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                FlowRow {
                                                     Text(
                                                         text = if (isSupplier) LanguageStrings.get("you_got_supplier", currentLang) else LanguageStrings.get("you_gave", currentLang),
                                                         style = MaterialTheme.typography.bodyMedium,
@@ -684,7 +691,7 @@ fun CustomerDetailScreen(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         // Plain Completed checkbox (e.g. goods delivered / packed) - NO MONEY EFFECT
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                                             Checkbox(
                                                 checked = tx.isCompleted,
                                                 onCheckedChange = { repository.toggleBillCompleted(tx.id) },
@@ -966,6 +973,8 @@ fun CustomerDetailScreen(
         val tempOwnerId = rememberSaveable { UUID.randomUUID().toString() }
 
         var selectedDueDateDays by rememberSaveable { mutableStateOf(0) }
+        var entryDate by rememberSaveable { mutableStateOf(EntryDate.NOW) }
+        var pickedDueDate by rememberSaveable { mutableStateOf(EntryDate.NOW) }
 
         val isGave = txTypeToAdd == "GAVE"
         val isCreditEntry = if (isSupplier) txTypeToAdd == "GOT" else txTypeToAdd == "GAVE"
@@ -979,7 +988,7 @@ fun CustomerDetailScreen(
             onDismissRequest = { showAddTxDialog = false },
             title = { Text(dialogTitle, fontWeight = FontWeight.Bold) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
                         text = "${LanguageStrings.get("party", currentLang)}: ${currentCustomer.name}",
                         style = MaterialTheme.typography.bodyMedium,
@@ -993,6 +1002,7 @@ fun CustomerDetailScreen(
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
+                    EntryDateButton(value = entryDate, lang = currentLang, onChange = { entryDate = it })
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -1022,18 +1032,24 @@ fun CustomerDetailScreen(
                             style = MaterialTheme.typography.labelSmall,
                             color = TextSecondary
                         )
-                        // Scrolls sideways instead of squeezing "30 days" onto 3 lines.
-                        Row(
-                            modifier = Modifier.horizontalScroll(androidx.compose.foundation.rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
+                        // Wraps, so every choice (and the calendar) is visible without side-scrolling.
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             listOf(0 to LanguageStrings.get("none_label", currentLang), 7 to LanguageStrings.get("chip_7_days", currentLang), 15 to LanguageStrings.get("chip_15_days", currentLang), 30 to LanguageStrings.get("chip_30_days", currentLang)).forEach { (days, label) ->
                                 FilterChip(
-                                    selected = selectedDueDateDays == days,
-                                    onClick = { selectedDueDateDays = days },
+                                    selected = pickedDueDate == EntryDate.NOW && selectedDueDateDays == days,
+                                    onClick = {
+                                        selectedDueDateDays = days
+                                        pickedDueDate = EntryDate.NOW
+                                    },
                                     label = { Text(text = label, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false) }
                                 )
                             }
+                            DueDateChip(
+                                value = pickedDueDate,
+                                entryDate = EntryDate.resolve(entryDate),
+                                lang = currentLang,
+                                onChange = { pickedDueDate = it }
+                            )
                         }
                     }
 
@@ -1053,7 +1069,7 @@ fun CustomerDetailScreen(
                             style = MaterialTheme.typography.labelSmall,
                             color = TextSecondary
                         )
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             listOf("CASH", "UPI", "BANK", "CHEQUE").forEach { mode ->
                                 FilterChip(
                                     selected = selectedPaymentMode == mode,
@@ -1111,12 +1127,8 @@ fun CustomerDetailScreen(
                     onClick = {
                         val amt = amountText.toDoubleOrNull() ?: 0.0
                         if (amt > 0.001) {
-                            val computedDueDate = if (selectedDueDateDays > 0) {
-                                val cal = java.util.Calendar.getInstance().apply {
-                                    add(java.util.Calendar.DAY_OF_YEAR, selectedDueDateDays)
-                                }
-                                cal.timeInMillis
-                            } else 0L
+                            val savedDate = EntryDate.resolve(entryDate)
+                            val computedDueDate = EntryDate.due(savedDate, selectedDueDateDays, pickedDueDate)
 
                             val newTx = repository.addTransaction(
                                 customerId = currentCustomer.id,
@@ -1125,6 +1137,7 @@ fun CustomerDetailScreen(
                                 note = noteText.trim(),
                                 paymentMode = selectedPaymentMode,
                                 onlyInKhata = onlyInKhata,
+                                date = savedDate,
                                 dueDate = computedDueDate
                             )
                             if (pendingAttachments.isNotEmpty()) {
@@ -1158,6 +1171,7 @@ fun CustomerDetailScreen(
         var receivedInput by remember { mutableStateOf("%.2f".format(outstanding)) }
         var selectedMode by remember { mutableStateOf("CASH") }
         var onlyInKhata by remember { mutableStateOf(false) }
+        var receivedDate by remember { mutableStateOf(EntryDate.NOW) }
         var showMoreOptions by remember { mutableStateOf(false) }
 
         AlertDialog(
@@ -1170,7 +1184,7 @@ fun CustomerDetailScreen(
                 }
             },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
                         text = "${LanguageStrings.get("party", currentLang)}: ${currentCustomer.name}",
                         fontWeight = FontWeight.SemiBold
@@ -1190,7 +1204,9 @@ fun CustomerDetailScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    EntryDateButton(value = receivedDate, lang = currentLang, onChange = { receivedDate = it })
+
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         FilledTonalButton(
                             onClick = { receivedInput = "%.2f".format(outstanding) },
                             contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
@@ -1212,7 +1228,7 @@ fun CustomerDetailScreen(
                         style = MaterialTheme.typography.labelSmall,
                         color = TextSecondary
                     )
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         listOf("CASH", "UPI", "BANK", "CHEQUE").forEach { mode ->
                             FilterChip(
                                 selected = selectedMode == mode,
@@ -1273,6 +1289,7 @@ fun CustomerDetailScreen(
                                 billId = bill.id,
                                 amount = amt,
                                 paymentMode = selectedMode,
+                                date = EntryDate.resolve(receivedDate),
                                 onlyInKhata = onlyInKhata
                             )
                             billToMarkReceived = null
@@ -1296,6 +1313,7 @@ fun CustomerDetailScreen(
         var bulkPaymentMode by remember { mutableStateOf("CASH") }
         var bulkOnlyInKhata by remember { mutableStateOf(false) }
         var bulkShowMore by remember { mutableStateOf(false) }
+        var bulkDate by remember { mutableStateOf(EntryDate.NOW) }
 
         val totalSelectedOutstanding = remember(selectedBillIds.toList(), customerTx) {
             customerTx.filter { selectedBillIds.contains(it.id) }
@@ -1306,7 +1324,8 @@ fun CustomerDetailScreen(
             onDismissRequest = { showMarkAllReceivedDialog = false },
             title = { Text(text = LanguageStrings.get("mark_all_received", currentLang), fontWeight = FontWeight.Bold) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    EntryDateButton(value = bulkDate, lang = currentLang, onChange = { bulkDate = it })
                     Text(
                         text = "${selectedBillIds.size} ${LanguageStrings.get("selected_bills", currentLang)}",
                         fontWeight = FontWeight.SemiBold
@@ -1379,6 +1398,7 @@ fun CustomerDetailScreen(
                 Button(
                     onClick = {
                         repository.markBillsAllReceived(
+                            date = EntryDate.resolve(bulkDate),
                             billIds = selectedBillIds.toList(),
                             paymentMode = bulkPaymentMode,
                             onlyInKhata = bulkOnlyInKhata
@@ -1415,7 +1435,7 @@ fun CustomerDetailScreen(
                 }
             },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
                         text = "${LanguageStrings.get("party", currentLang)}: ${currentCustomer.name}",
                         fontWeight = FontWeight.SemiBold
@@ -1572,6 +1592,7 @@ fun CustomerDetailScreen(
         var editAmount by remember { mutableStateOf("%.2f".format(editingTx.amount)) }
         var editNote by remember { mutableStateOf(editingTx.note) }
         var editMode by remember { mutableStateOf(editingTx.paymentMode) }
+        var editDate by remember { mutableStateOf(editingTx.date) }
         val currentTxAttachments = remember(editingTx.id, allAttachments) {
             repository.getAttachmentsForOwner("ENTRY", editingTx.id)
         }
@@ -1581,7 +1602,7 @@ fun CustomerDetailScreen(
             onDismissRequest = { txToEdit = null },
             title = { Text(LanguageStrings.get("edit_entry", currentLang), fontWeight = FontWeight.Bold) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     OutlinedTextField(
                         value = editAmount,
                         onValueChange = { editAmount = it },
@@ -1589,6 +1610,7 @@ fun CustomerDetailScreen(
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
+                    EntryDateButton(value = editDate, lang = currentLang, onChange = { editDate = it })
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -1633,7 +1655,7 @@ fun CustomerDetailScreen(
                         style = MaterialTheme.typography.labelSmall,
                         color = TextSecondary
                     )
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         listOf("CASH", "UPI", "BANK", "CHEQUE").forEach { mode ->
                             FilterChip(
                                 selected = editMode == mode,
@@ -1666,7 +1688,7 @@ fun CustomerDetailScreen(
                                 txId = editingTx.id,
                                 amount = parsed,
                                 note = editNote.trim(),
-                                date = editingTx.date,
+                                date = editDate,
                                 paymentMode = editMode
                             )
                             txToEdit = null
@@ -1691,7 +1713,7 @@ fun CustomerDetailScreen(
             onDismissRequest = { showEditPhoneDialog = false },
             title = { Text(text = LanguageStrings.get("update_phone_title", currentLang), fontWeight = FontWeight.Bold) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
                         text = "${LanguageStrings.get("update_phone_desc", currentLang)} ${currentCustomer.name}:",
                         style = MaterialTheme.typography.bodySmall,

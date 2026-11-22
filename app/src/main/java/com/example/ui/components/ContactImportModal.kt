@@ -1,5 +1,7 @@
 package com.example.ui.components
 
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.listSaver
 import android.provider.ContactsContract
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -47,8 +49,10 @@ fun ContactImportModal(
     val context = LocalContext.current
     var contacts by remember { mutableStateOf<List<PhoneContact>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
-    var searchQuery by remember { mutableStateOf("") }
-    val selectedNormalizedNumbers = remember { mutableStateListOf<String>() }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    val selectedNormalizedNumbers = rememberSaveable(
+        saver = listSaver(save = { it.toList() }, restore = { it.toMutableStateList() })
+    ) { mutableStateListOf<String>() }
 
     // Load contacts on Dispatchers.IO
     LaunchedEffect(Unit) {
@@ -105,14 +109,17 @@ fun ContactImportModal(
 
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+        // decorFitsSystemWindows = false is what makes the insets below non-zero. Without it the
+        // dialog is as tall as the screen but starts under the status bar, so its bottom button
+        // ends up behind the Back / Home bar.
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
     ) {
+        FullScreenDialogWindow()
         Surface(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding()
-                .imePadding(),
+                .background(SoftBackground)
+                .safeDrawingPadding(),
             color = SoftBackground
         ) {
             Column(modifier = Modifier.fillMaxSize()) {

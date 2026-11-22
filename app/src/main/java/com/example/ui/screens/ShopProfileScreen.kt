@@ -1481,7 +1481,7 @@ fun ShopProfileScreen(
             onDismissRequest = { showImportSummaryDialog = false },
             title = { Text(LanguageStrings.get("restore_summary_title", currentLang), fontWeight = FontWeight.Bold) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (validation.isValid) {
                         Text(LanguageStrings.get("restore_warning", currentLang), style = MaterialTheme.typography.bodySmall, color = TextSecondary)
                         Spacer(modifier = Modifier.height(4.dp))
@@ -1550,7 +1550,7 @@ fun ShopProfileScreen(
             onDismissRequest = { showClearDataDialog = false },
             title = { Text(LanguageStrings.get("clear_data_title", currentLang), fontWeight = FontWeight.Bold, color = UdharRed) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
                         LanguageStrings.get("clear_data_desc", currentLang),
                         style = MaterialTheme.typography.bodyMedium,
@@ -1606,7 +1606,7 @@ fun ShopProfileScreen(
                 )
             },
             text = {
-                Column {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                     Text(
                         LanguageStrings.get("pin_setup_desc", currentLang),
                         style = MaterialTheme.typography.bodySmall,

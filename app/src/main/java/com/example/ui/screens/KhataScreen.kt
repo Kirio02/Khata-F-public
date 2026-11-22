@@ -1,5 +1,10 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import com.example.ui.util.EntryDate
+import com.example.ui.components.EntryDateButton
+import androidx.compose.runtime.saveable.rememberSaveable
 import android.Manifest
 import android.app.Activity
 import android.content.Context
@@ -88,7 +93,7 @@ fun KhataScreen(
 
     // Contact Import States
     var showContactRationaleDialog by remember { mutableStateOf(false) }
-    var showContactImportModal by remember { mutableStateOf(false) }
+    var showContactImportModal by rememberSaveable { mutableStateOf(false) }
     var showPermissionDeniedDialog by remember { mutableStateOf(false) }
     var showPermanentlyDeniedDialog by remember { mutableStateOf(false) }
 
@@ -128,7 +133,7 @@ fun KhataScreen(
     var quickActionNote by remember { mutableStateOf("") }
     var quickActionPaymentMode by remember { mutableStateOf("CASH") }
     var quickActionCashGiven by remember { mutableStateOf(false) }
-    var quickActionDate by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    var quickActionDate by remember { mutableLongStateOf(EntryDate.NOW) }
 
     // Voice confirmation dialog state
     var voiceConfirmationEntry by remember { mutableStateOf<VoiceParsedEntry?>(null) }
@@ -353,7 +358,8 @@ fun KhataScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = AppSpacing.xs),
+                            .padding(vertical = AppSpacing.xs)
+                            .height(IntrinsicSize.Min),
                         horizontalArrangement = Arrangement.spacedBy(AppSpacing.sm)
                     ) {
                         // "Maine diye" (Udhar Red)
@@ -369,7 +375,8 @@ fun KhataScreen(
                             shape = RoundedCornerShape(16.dp),
                             modifier = Modifier
                                 .weight(1f)
-                                .height(btnHeight)
+                                .fillMaxHeight()
+                                .heightIn(min = btnHeight)
                                 .testTag("giant_btn_maine_diye"),
                             contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
                         ) {
@@ -380,8 +387,10 @@ fun KhataScreen(
                                     text = LanguageStrings.get("maine_diye", lang),
                                     fontWeight = FontWeight.Bold,
                                     fontSize = if (simpleMode) 13.sp else 12.sp,
+                                    lineHeight = 14.sp,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                                     color = SurfaceWhite,
-                                    maxLines = 1,
+                                    maxLines = 2,
                                     overflow = TextOverflow.Ellipsis
                                 )
                             }
@@ -400,7 +409,8 @@ fun KhataScreen(
                             shape = RoundedCornerShape(16.dp),
                             modifier = Modifier
                                 .weight(1f)
-                                .height(btnHeight)
+                                .fillMaxHeight()
+                                .heightIn(min = btnHeight)
                                 .testTag("giant_btn_mujhe_mile"),
                             contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
                         ) {
@@ -411,8 +421,10 @@ fun KhataScreen(
                                     text = LanguageStrings.get("mujhe_mile", lang),
                                     fontWeight = FontWeight.Bold,
                                     fontSize = if (simpleMode) 13.sp else 12.sp,
+                                    lineHeight = 14.sp,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                                     color = SurfaceWhite,
-                                    maxLines = 1,
+                                    maxLines = 2,
                                     overflow = TextOverflow.Ellipsis
                                 )
                             }
@@ -425,7 +437,8 @@ fun KhataScreen(
                             shape = RoundedCornerShape(16.dp),
                             modifier = Modifier
                                 .weight(1f)
-                                .height(btnHeight)
+                                .fillMaxHeight()
+                                .heightIn(min = btnHeight)
                                 .testTag("giant_btn_naya_bill"),
                             contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
                         ) {
@@ -436,8 +449,10 @@ fun KhataScreen(
                                     text = LanguageStrings.get("naya_bill_giant", lang),
                                     fontWeight = FontWeight.Bold,
                                     fontSize = if (simpleMode) 13.sp else 12.sp,
+                                    lineHeight = 14.sp,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                                     color = SurfaceWhite,
-                                    maxLines = 1,
+                                    maxLines = 2,
                                     overflow = TextOverflow.Ellipsis
                                 )
                             }
@@ -490,26 +505,26 @@ fun KhataScreen(
                             Spacer(modifier = Modifier.height(12.dp))
 
                             // Received Today & Given Today
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 Surface(
-                                    modifier = Modifier.weight(1f),
+                                    modifier = Modifier.weight(1f).fillMaxHeight(),
                                     shape = RoundedCornerShape(12.dp),
                                     color = JamaGreen.copy(alpha = 0.08f)
                                 ) {
                                     Column(modifier = Modifier.padding(10.dp)) {
-                                        Text(text = LanguageStrings.get("today_received", lang), fontSize = 11.sp, color = TextSecondary, fontWeight = FontWeight.Medium)
+                                        Text(text = LanguageStrings.get("today_received", lang), fontSize = 11.sp, lineHeight = 13.sp, color = TextSecondary, fontWeight = FontWeight.Medium)
                                         Spacer(modifier = Modifier.height(2.dp))
                                         Text(text = formatIndianCurrency(todayGot), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = JamaGreen)
                                     }
                                 }
 
                                 Surface(
-                                    modifier = Modifier.weight(1f),
+                                    modifier = Modifier.weight(1f).fillMaxHeight(),
                                     shape = RoundedCornerShape(12.dp),
                                     color = UdharRed.copy(alpha = 0.08f)
                                 ) {
                                     Column(modifier = Modifier.padding(10.dp)) {
-                                        Text(text = LanguageStrings.get("today_given", lang), fontSize = 11.sp, color = TextSecondary, fontWeight = FontWeight.Medium)
+                                        Text(text = LanguageStrings.get("today_given", lang), fontSize = 11.sp, lineHeight = 13.sp, color = TextSecondary, fontWeight = FontWeight.Medium)
                                         Spacer(modifier = Modifier.height(2.dp))
                                         Text(text = formatIndianCurrency(todayGave), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = UdharRed)
                                     }
@@ -522,11 +537,11 @@ fun KhataScreen(
 
                             // Cash & Bank Balance
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Column {
+                                Column(modifier = Modifier.weight(1f)) {
                                     Text(text = LanguageStrings.get("cash_balance_label", lang), fontSize = 11.sp, color = TextSecondary)
                                     Text(text = formatIndianCurrency(cashBalance), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = TextPrimary)
                                 }
-                                Column(horizontalAlignment = Alignment.End) {
+                                Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.End) {
                                     Text(text = LanguageStrings.get("bank_balance_label", lang), fontSize = 11.sp, color = TextSecondary)
                                     Text(text = formatIndianCurrency(bankBalance), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = PrimaryBlue)
                                 }
@@ -553,14 +568,13 @@ fun KhataScreen(
                         colors = CardDefaults.cardColors(containerColor = backupBg),
                         border = BorderStroke(1.dp, backupBorder)
                     ) {
-                        Row(
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 14.dp, vertical = 10.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                                 Icon(
                                     imageVector = if (isBackupOld) Icons.Default.Warning else Icons.Default.CloudSync,
                                     contentDescription = null,
@@ -572,7 +586,7 @@ fun KhataScreen(
                                     Text(
                                         text = "${LanguageStrings.get("last_backup_prefix", lang)} $backupDaysStr",
                                         fontWeight = FontWeight.Bold,
-                                        fontSize = 12.sp,
+                                        fontSize = 12.sp, lineHeight = 15.sp,
                                         color = if (isBackupOld) UdharRed else TextPrimary
                                     )
                                     if (isBackupOld) {
@@ -581,7 +595,7 @@ fun KhataScreen(
                                                 if (lastBackupTimestamp == 0L) "backup_warning_never" else "backup_warning_old",
                                                 lang
                                             ),
-                                            fontSize = 10.sp,
+                                            fontSize = 10.sp, lineHeight = 13.sp,
                                             color = UdharRed
                                         )
                                     }
@@ -593,7 +607,7 @@ fun KhataScreen(
                                 shape = RoundedCornerShape(8.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = if (isBackupOld) UdharRed else PrimaryBlue),
                                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                                modifier = Modifier.height(36.dp)
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp)
                             ) {
                                 Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(14.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
@@ -702,7 +716,7 @@ fun KhataScreen(
                                             IconButton(
                                                 onClick = { launchWhatsApp(party.phone, party.name, amount) },
                                                 modifier = Modifier
-                                                    .size(36.dp)
+                                                    .size(48.dp)
                                                     .clip(CircleShape)
                                                     .background(JamaGreen.copy(alpha = 0.12f))
                                             ) {
@@ -713,7 +727,7 @@ fun KhataScreen(
                                             IconButton(
                                                 onClick = { launchCall(party.phone) },
                                                 modifier = Modifier
-                                                    .size(36.dp)
+                                                    .size(48.dp)
                                                     .clip(CircleShape)
                                                     .background(PrimaryBlue.copy(alpha = 0.12f))
                                             ) {
@@ -730,11 +744,7 @@ fun KhataScreen(
                 // 5. "AAJ KI DELIVERY" (Daily checklist)
                 item(key = "aaj_ki_delivery_section") {
                     Column(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Default.LocalShipping, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
@@ -746,10 +756,14 @@ fun KhataScreen(
                                 )
                             }
 
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
                                 TextButton(onClick = { showDeliveryHistory = !showDeliveryHistory }) {
                                     Text(
-                                        text = if (showDeliveryHistory) "Today" else LanguageStrings.get("delivery_history", lang),
+                                        text = if (showDeliveryHistory) LanguageStrings.get("date_today_label", lang) else LanguageStrings.get("delivery_history", lang),
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.SemiBold
                                     )
@@ -758,7 +772,7 @@ fun KhataScreen(
                                     onClick = { showAddDeliveryDialog = true },
                                     shape = RoundedCornerShape(8.dp),
                                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                                    modifier = Modifier.height(32.dp)
+                                    modifier = Modifier.heightIn(min = 44.dp)
                                 ) {
                                     Text(text = LanguageStrings.get("delivery_task_add", lang), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                 }
@@ -835,7 +849,7 @@ fun KhataScreen(
                             value = searchQuery,
                             onValueChange = { searchQuery = it },
                             modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text(text = LanguageStrings.get("search_hint", lang), fontSize = 13.sp) },
+                            placeholder = { Text(text = LanguageStrings.get("search_hint", lang), fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = TextSecondary) },
                             shape = RoundedCornerShape(24.dp),
                             singleLine = true,
@@ -863,6 +877,7 @@ fun KhataScreen(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(16.dp))
                                         .clickable { selectedFilter = key },
+                                    shape = RoundedCornerShape(16.dp),
                                     color = if (isSelected) PrimaryBlue else ChipInactiveBg,
                                     border = if (isSelected) null else CardDefaults.outlinedCardBorder()
                                 ) {
@@ -927,7 +942,11 @@ fun KhataScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier.weight(1f)
                                 ) {
-                                    Box(
+                                    // The initial is decoration: with a big font on a narrow screen its space goes to the name.
+                                    val roomForInitial = androidx.compose.ui.platform.LocalConfiguration.current.let {
+                                        it.screenWidthDp / it.fontScale >= 270f
+                                    }
+                                    if (roomForInitial) Box(
                                         modifier = Modifier
                                             .size(40.dp)
                                             .clip(CircleShape)
@@ -942,7 +961,7 @@ fun KhataScreen(
                                         )
                                     }
 
-                                    Spacer(modifier = Modifier.width(AppSpacing.md))
+                                    if (roomForInitial) Spacer(modifier = Modifier.width(AppSpacing.md))
 
                                     Column(modifier = Modifier.weight(1f, fill = false)) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -951,7 +970,7 @@ fun KhataScreen(
                                                 fontWeight = FontWeight.Bold,
                                                 style = MaterialTheme.typography.titleMedium,
                                                 color = TextPrimary,
-                                                maxLines = 1,
+                                                maxLines = 2,
                                                 overflow = TextOverflow.Ellipsis,
                                                 modifier = Modifier.weight(1f, fill = false)
                                             )
@@ -1067,7 +1086,7 @@ fun KhataScreen(
                                             quickActionAmount = ""
                                             quickActionNote = ""
                                             quickActionPaymentMode = "CASH"
-                                            quickActionDate = System.currentTimeMillis()
+                                            quickActionDate = EntryDate.NOW
                                             quickActionPartyPickerMode = null
                                         }
                                         .padding(vertical = AppSpacing.sm, horizontal = AppSpacing.xs),
@@ -1122,8 +1141,8 @@ fun KhataScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
-                        Text(text = cust.name, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(text = cust.name, fontWeight = FontWeight.Bold, fontSize = 16.sp, lineHeight = 18.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                         Text(
                             text = if (actionType == "GAVE") LanguageStrings.get("maine_diye", lang) else LanguageStrings.get("mujhe_mile", lang),
                             fontWeight = FontWeight.Bold,
@@ -1146,9 +1165,11 @@ fun KhataScreen(
             },
             text = {
                 Column(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.verticalScroll(rememberScrollState()).fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    EntryDateButton(value = quickActionDate, lang = lang, onChange = { quickActionDate = it })
+
                     // Large Amount Display
                     Surface(
                         modifier = Modifier
@@ -1160,7 +1181,7 @@ fun KhataScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp),
+                                .padding(8.dp),
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -1258,7 +1279,7 @@ fun KhataScreen(
                                         border = BorderStroke(1.dp, CardBorder),
                                         modifier = Modifier
                                             .weight(1f)
-                                            .height(48.dp)
+                                            .height(44.dp)
                                     ) {
                                         Text(text = key, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                                     }
@@ -1279,7 +1300,7 @@ fun KhataScreen(
                                 amount = parsedAmount,
                                 note = quickActionNote.trim(),
                                 paymentMode = quickActionPaymentMode,
-                                date = quickActionDate,
+                                date = EntryDate.resolve(quickActionDate),
                                 cashGivenOut = quickActionCashGiven
                             )
                             quickActionCashGiven = false
@@ -1331,7 +1352,7 @@ fun KhataScreen(
             },
             text = {
                 Card(
-                    modifier = Modifier.fillMaxWidth().testTag("voice_confirm_card"),
+                    modifier = Modifier.verticalScroll(rememberScrollState()).fillMaxWidth().testTag("voice_confirm_card"),
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = if (isGave) UdharRed.copy(alpha = 0.08f) else JamaGreen.copy(alpha = 0.08f)),
                     border = BorderStroke(1.dp, if (isGave) UdharRed.copy(alpha = 0.4f) else JamaGreen.copy(alpha = 0.4f))
@@ -1502,7 +1523,7 @@ fun KhataScreen(
             onDismissRequest = { showVoiceInputDialog = false },
             title = { Text(text = LanguageStrings.get("voice_entry_mic", lang), fontWeight = FontWeight.Bold) },
             text = {
-                Column {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                     OutlinedTextField(
                         value = voiceInputText,
                         onValueChange = { voiceInputText = it },
@@ -1541,7 +1562,7 @@ fun KhataScreen(
             onDismissRequest = { showAddDeliveryDialog = false },
             title = { Text(text = LanguageStrings.get("delivery_task_add", lang), fontWeight = FontWeight.Bold) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     OutlinedTextField(
                         value = newDeliveryPartyName,
                         onValueChange = { newDeliveryPartyName = it },
@@ -1668,12 +1689,13 @@ fun KhataScreen(
         var partyPhone by remember { mutableStateOf("") }
         var partyAddress by remember { mutableStateOf("") }
         var openingBalance by remember { mutableStateOf("") }
+        var openingDate by remember { mutableLongStateOf(EntryDate.NOW) }
 
         AlertDialog(
             onDismissRequest = { showAddPartyDialog = false },
             title = { Text(text = LanguageStrings.get("add_party", lang), fontWeight = FontWeight.Bold) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
                         text = LanguageStrings.get("party_type_label", lang),
                         style = MaterialTheme.typography.labelMedium,
@@ -1747,6 +1769,9 @@ fun KhataScreen(
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
+                    if (openingBalance.isNotBlank()) {
+                        EntryDateButton(value = openingDate, lang = lang, onChange = { openingDate = it })
+                    }
                 }
             },
             confirmButton = {
@@ -1765,7 +1790,8 @@ fun KhataScreen(
                                     customerId = newCust.id,
                                     type = if (partyType == PartyType.CUSTOMER) "GAVE" else "GOT",
                                     amount = openBal,
-                                    note = LanguageStrings.get("opening_balance_note", lang)
+                                    note = LanguageStrings.get("opening_balance_note", lang),
+                                    date = EntryDate.resolve(openingDate)
                                 )
                             }
                             showAddPartyDialog = false
