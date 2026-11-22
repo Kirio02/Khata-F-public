@@ -197,15 +197,26 @@ class AppRepository(
         refreshAllInMemoryCachesInternal()
     }
 
+    /**
+     * A flow emission can be older than what a write has already put in the cache, so it is only
+     * a signal to read again. If the cache changes during that read, read once more: the money
+     * lists therefore never step back to an older state.
+     */
+    private suspend fun <T> MutableStateFlow<T>.replaceWithLatest(read: suspend () -> T) {
+        while (true) {
+            val before = value
+            val latest = read()
+            if (compareAndSet(before, latest)) return
+        }
+    }
+
     private fun startRoomFlowCollectors() {
         database.customerDao().getAll()
-            .map { list -> list.map { it.toDomain() } }
-            .onEach { _customers.value = it }
+            .onEach { _customers.replaceWithLatest { database.customerDao().getAllList().map { it.toDomain() } } }
             .launchIn(repositoryScope)
 
         database.transactionDao().getAll()
-            .map { list -> list.map { it.toDomain() } }
-            .onEach { _transactions.value = it }
+            .onEach { _transactions.replaceWithLatest { database.transactionDao().getAllList().map { it.toDomain() } } }
             .launchIn(repositoryScope)
 
         database.inventoryDao().getAll()
@@ -214,18 +225,15 @@ class AppRepository(
             .launchIn(repositoryScope)
 
         database.invoiceDao().getAllWithItems()
-            .map { list -> list.map { it.toDomain() } }
-            .onEach { _invoices.value = it }
+            .onEach { _invoices.replaceWithLatest { database.invoiceDao().getAllWithItemsList().map { it.toDomain() } } }
             .launchIn(repositoryScope)
 
         database.cashbookDao().getAll()
-            .map { list -> list.map { it.toDomain() } }
-            .onEach { _cashbook.value = it }
+            .onEach { _cashbook.replaceWithLatest { database.cashbookDao().getAllList().map { it.toDomain() } } }
             .launchIn(repositoryScope)
 
         database.cashbookDao().getBinEntries()
-            .map { list -> list.map { it.toDomain() } }
-            .onEach { _binEntries.value = it }
+            .onEach { _binEntries.replaceWithLatest { database.cashbookDao().getBinEntriesList().map { it.toDomain() } } }
             .launchIn(repositoryScope)
 
         database.drawerCountDao().getAll()
@@ -940,11 +948,27 @@ class AppRepository(
      * payments linked to a bill count for that bill first; every other payment is applied
      * to the oldest unpaid bills first. Nothing is stored; it is recalculated from the entries.
      */
-    fun computeBillAllocations(customerId: String): Map<String, Double> {
-        val isSupplier = customers.value.firstOrNull { it.id == customerId }?.type == "SUPPLIER"
+    fun computeBillAllocations(customerId: String): Map<String, Double> = allocatePayments(
+        partyTxs = transactions.value.filter { it.customerId == customerId },
+        isSupplier = customers.value.firstOrNull { it.id == customerId }?.type == "SUPPLIER"
+    )
+
+    /**
+     * For writing payments. The in-memory lists can briefly lag the database, so sizing a payment
+     * from them skipped bills or took a payment twice; this reads inside the caller's transaction.
+     */
+    private suspend fun outstandingInDb(bill: TransactionEntity): Double {
+        val partyTxs = database.transactionDao().getAllList()
+            .filter { it.customerId == bill.customerId }
+            .map { it.toDomain() }
+        val isSupplier = database.customerDao().getById(bill.customerId)?.type == "SUPPLIER"
+        val received = allocatePayments(partyTxs, isSupplier)[bill.id] ?: 0.0
+        return (bill.amount - received).coerceAtLeast(0.0)
+    }
+
+    private fun allocatePayments(partyTxs: List<Transaction>, isSupplier: Boolean): Map<String, Double> {
         val billType = if (isSupplier) "GOT" else "GAVE"
         val paymentType = if (isSupplier) "GAVE" else "GOT"
-        val partyTxs = transactions.value.filter { it.customerId == customerId }
         val bills = partyTxs.filter { it.type == billType && it.linkedToTxId == null }.sortedBy { it.date }
         val billIds = bills.map { it.id }.toHashSet()
         val payments = partyTxs.filter { it.type == paymentType }
@@ -1099,8 +1123,7 @@ class AppRepository(
             database.withTransaction {
                 val bill = database.transactionDao().getById(billId) ?: return@withTransaction null
                 val customer = database.customerDao().getById(bill.customerId)
-                val domainBill = transactions.value.firstOrNull { it.id == billId }
-                val maxAllowed = if (domainBill != null) getBillOutstandingAmount(domainBill) else bill.amount
+                val maxAllowed = outstandingInDb(bill)
                 if (maxAllowed <= 0.001) return@withTransaction null
                 val cleanAmount = amount.coerceAtLeast(0.01).coerceAtMost(maxAllowed)
 
@@ -1169,13 +1192,13 @@ class AppRepository(
         date: Long = System.currentTimeMillis()
     ) {
         checkWritesAllowed()
-        // Outstanding amounts are taken once, before any new payment is added.
-        val outstandingSnapshot: Map<String, Double> = billIds.associateWith { id ->
-            transactions.value.firstOrNull { it.id == id }?.let { getBillOutstandingAmount(it) } ?: 0.0
-        }
         runBlocking(Dispatchers.IO) {
             database.withTransaction {
-                for (billId in billIds) {
+                // Outstanding amounts are taken once, before any new payment is added.
+                val outstandingSnapshot: Map<String, Double> = billIds.associateWith { id ->
+                    database.transactionDao().getById(id)?.let { outstandingInDb(it) } ?: 0.0
+                }
+                for (billId in billIds.distinct()) {
                     val bill = database.transactionDao().getById(billId) ?: continue
                     val outstanding = outstandingSnapshot[billId] ?: 0.0
                     if (outstanding > 0.01) {
@@ -2174,59 +2197,50 @@ class AppRepository(
     // CSV IMPORT
     // ==========================================
 
+    /** Same phone, or the same name when either side has no phone. */
+    private fun isSameParty(nameA: String, phoneA: String, nameB: String, phoneB: String): Boolean {
+        val a = PhoneUtil.normalize(phoneA)
+        val b = PhoneUtil.normalize(phoneB)
+        return if (a.isNotBlank() && b.isNotBlank()) a == b else nameA.trim().equals(nameB.trim(), ignoreCase = true)
+    }
+
     fun previewCustomersFromCsv(csvText: String): List<CsvCustomerPreview> {
-        val lines = csvText.lines()
-        val result = mutableListOf<CsvCustomerPreview>()
         val existing = customers.value
-
-        for (line in lines) {
-            val trimmed = line.trim()
-            if (trimmed.isBlank()) continue
-            val parts = trimmed.split(",").map { it.trim().trim('"', '\'') }
-            val rawName = parts.getOrNull(0) ?: ""
-            if (rawName.isBlank() || rawName.equals("name", ignoreCase = true) || rawName.equals("customer name", ignoreCase = true)) {
-                continue
-            }
-
-            val rawPhone = parts.getOrNull(1) ?: ""
-            val rawBalanceStr = parts.getOrNull(2) ?: "0"
-            val balance = rawBalanceStr.toDoubleOrNull() ?: 0.0
-
-            val normPhone = rawPhone.replace(Regex("[^0-9]"), "")
-            val isDup = existing.any { cust ->
-                val existingNorm = cust.phone.replace(Regex("[^0-9]"), "")
-                if (normPhone.isNotBlank() && existingNorm.isNotBlank()) {
-                    normPhone == existingNorm
-                } else {
-                    cust.name.trim().equals(rawName.trim(), ignoreCase = true)
-                }
-            } || result.any { r ->
-                val prevNorm = r.phone.replace(Regex("[^0-9]"), "")
-                if (normPhone.isNotBlank() && prevNorm.isNotBlank()) {
-                    normPhone == prevNorm
-                } else {
-                    r.name.trim().equals(rawName.trim(), ignoreCase = true)
-                }
-            }
-
-            result.add(CsvCustomerPreview(name = rawName, phone = rawPhone, balance = balance, isDuplicate = isDup))
+        val accepted = mutableListOf<BalanceCsv.Row>()
+        return BalanceCsv.parse(csvText).map { row ->
+            val isDup = row.error == null && (
+                existing.any { isSameParty(row.name, row.phone, it.name, it.phone) } ||
+                    accepted.any { isSameParty(row.name, row.phone, it.name, it.phone) }
+                )
+            if (row.error == null && !isDup) accepted.add(row)
+            CsvCustomerPreview(
+                name = row.name,
+                phone = row.phone,
+                balance = row.balance,
+                isDuplicate = isDup,
+                error = row.error,
+                line = row.line
+            )
         }
-        return result
     }
 
     fun importCustomersFromCsv(previews: List<CsvCustomerPreview>): Int {
         checkWritesAllowed()
-        val nonDuplicates = previews.filter { !it.isDuplicate }
+        val toImport = previews.filter { it.canImport }
         return runBlocking(Dispatchers.IO) {
             val count = database.withTransaction {
+                // Checked again here: a second tap or an old preview must not add a balance twice.
+                val saved = database.customerDao().getAllList().toMutableList()
                 var importedCount = 0
-                for (item in nonDuplicates) {
+                for (item in toImport) {
+                    if (saved.any { isSameParty(item.name, item.phone, it.name, it.phone) }) continue
                     val newCust = CustomerEntity(
                         name = item.name.trim(),
                         phone = PhoneUtil.normalize(item.phone),
                         type = item.type.uppercase()
                     )
                     database.customerDao().insert(newCust)
+                    saved.add(newCust)
                     if (Math.abs(item.balance) > 0.009) {
                         database.transactionDao().insert(
                             TransactionEntity(

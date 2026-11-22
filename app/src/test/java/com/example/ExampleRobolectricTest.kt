@@ -275,7 +275,9 @@ class ExampleRobolectricTest {
         """.trimIndent()
 
         val previews = repository.previewCustomersFromCsv(csvData)
-        assertEquals("Should parse 2 valid rows and skip empty name", 2, previews.size)
+        assertEquals("Every line is shown, none dropped silently", 3, previews.size)
+        assertEquals("Only the 2 named rows can be imported", 2, previews.count { it.canImport })
+        assertEquals("csv_err_name", previews[2].error)
         assertEquals("Ramesh Kumar", previews[0].name)
         assertEquals(1500.0, previews[0].balance, 0.01)
 

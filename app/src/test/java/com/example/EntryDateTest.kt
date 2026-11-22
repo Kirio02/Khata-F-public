@@ -84,6 +84,7 @@ class EntryDateTest {
         val a = repo.addTransaction(party.id, 100.0, "GAVE", date = fiveDaysAgo)
         val b = repo.addTransaction(party.id, 200.0, "GAVE", date = fiveDaysAgo)
         repo.markBillsAllReceived(billIds = listOf(a.id, b.id), date = threeDaysAgo)
+        repo.refreshAllInMemoryCaches()
         assertEquals(listOf(threeDaysAgo, threeDaysAgo), repo.cashbook.value.map { it.date })
         assertEquals(0.0, repo.getCustomerBalance(party.id), 0.001)
     }

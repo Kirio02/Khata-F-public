@@ -242,8 +242,12 @@ data class CsvCustomerPreview(
     val phone: String,
     val balance: Double,
     val isDuplicate: Boolean,
-    val type: String = "CUSTOMER"
-)
+    val type: String = "CUSTOMER",
+    val error: String? = null, // LanguageStrings key; a row with an error is never imported
+    val line: Int = 0
+) {
+    val canImport: Boolean get() = error == null && !isDuplicate
+}
 
 enum class AppLanguage(val code: String, val displayName: String, val nativeName: String) {
     HINGLISH("hinglish", "Hinglish", "Hinglish (Default)"),

@@ -187,14 +187,14 @@ fun ShopProfileScreen(
                         repository.previewCustomersFromCsv(content)
                     }
                     if (previews.isEmpty()) {
-                        Toast.makeText(context, "No valid customer rows found in CSV", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, LanguageStrings.get("csv_no_rows", currentLang), Toast.LENGTH_LONG).show()
                     } else {
                         csvPreviews = previews
                         showCsvPreviewDialog = true
                     }
                 } catch (e: Exception) {
                     android.util.Log.e("ShopProfileScreen", "Failed to read CSV: ${e.message}", e)
-                    Toast.makeText(context, "Failed to read CSV file", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, LanguageStrings.get("csv_read_failed", currentLang), Toast.LENGTH_SHORT).show()
                 } finally {
                     progressMessage = null
                 }
@@ -1402,45 +1402,60 @@ fun ShopProfileScreen(
 
     // CSV Preview Dialog
     if (showCsvPreviewDialog) {
-        val newCount = csvPreviews.count { !it.isDuplicate }
+        val newCount = csvPreviews.count { it.canImport }
         val dupCount = csvPreviews.count { it.isDuplicate }
+        val badCount = csvPreviews.count { it.error != null }
+        val readable = csvPreviews.filter { it.error == null }
+        val fileLena = readable.filter { it.balance > 0 }.sumOf { it.balance }
+        val fileDena = readable.filter { it.balance < 0 }.sumOf { -it.balance }
+        // problems first, so they are seen before the import button is tapped
+        val shownRows = csvPreviews.sortedBy { it.error == null }
 
         AlertDialog(
             onDismissRequest = { showCsvPreviewDialog = false },
             title = { Text(LanguageStrings.get("csv_preview_title", currentLang), fontWeight = FontWeight.Bold) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(LanguageStrings.get("rows_found_prefix", currentLang) + " " + csvPreviews.size)
-                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Text(LanguageStrings.get("new_customers_prefix", currentLang) + " $newCount", color = JamaGreen, fontWeight = FontWeight.Bold)
-                        if (dupCount > 0) {
-                            Text(LanguageStrings.get("existing_customers_prefix", currentLang) + " $dupCount", color = TextSecondary)
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    item {
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(LanguageStrings.get("rows_found_prefix", currentLang) + " " + csvPreviews.size)
+                            Text(LanguageStrings.get("new_customers_prefix", currentLang) + " $newCount", color = JamaGreen, fontWeight = FontWeight.Bold)
+                            if (dupCount > 0) {
+                                Text(LanguageStrings.get("existing_customers_prefix", currentLang) + " $dupCount", color = TextSecondary)
+                            }
+                            if (badCount > 0) {
+                                Text(LanguageStrings.get("csv_bad_rows", currentLang) + " $badCount", color = UdharRed, fontWeight = FontWeight.Bold)
+                            }
+                            HorizontalDivider()
+                            Text(LanguageStrings.get("csv_check_total", currentLang), fontSize = 12.sp, color = TextSecondary)
+                            Text(text = "${LanguageStrings.get("party_lena", currentLang)}: ${formatIndianCurrency(fileLena)}", color = UdharRed, fontWeight = FontWeight.Bold)
+                            Text(text = "${LanguageStrings.get("party_dena", currentLang)}: ${formatIndianCurrency(fileDena)}", color = JamaGreen, fontWeight = FontWeight.Bold)
+                            HorizontalDivider()
                         }
                     }
-                    HorizontalDivider()
-                    LazyColumn(modifier = Modifier.heightIn(max = 240.dp)) {
-                        items(csvPreviews) { item ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(item.name, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-                                    if (item.phone.isNotBlank()) {
-                                        Text(item.phone, fontSize = 11.sp, color = TextSecondary)
-                                    }
-                                }
-                                Column(horizontalAlignment = Alignment.End) {
-                                    Text(
-                                        text = if (item.balance >= 0) "Lena: ₹${"%.2f".format(item.balance)}" else "Dena: ₹${"%.2f".format(-item.balance)}",
-                                        color = if (item.balance >= 0) UdharRed else JamaGreen,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 12.sp
-                                    )
-                                    if (item.isDuplicate) {
-                                        Text(LanguageStrings.get("exists_balance_updated", currentLang), fontSize = 10.sp, color = TextSecondary)
-                                    }
+                    items(shownRows) { item ->
+                        val error = item.error
+                        Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                            Text(item.name.ifBlank { "-" }, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                            if (item.phone.isNotBlank()) {
+                                Text(item.phone, fontSize = 11.sp, color = TextSecondary)
+                            }
+                            if (error != null) {
+                                Text(
+                                    text = "${LanguageStrings.get("csv_line", currentLang)} ${item.line}: ${LanguageStrings.get(error, currentLang)}",
+                                    color = UdharRed,
+                                    fontSize = 12.sp
+                                )
+                            } else {
+                                val side = if (item.balance >= 0) "party_lena" else "party_dena"
+                                Text(
+                                    text = "${LanguageStrings.get(side, currentLang)}: ${formatIndianCurrency(kotlin.math.abs(item.balance))}",
+                                    color = if (item.balance >= 0) UdharRed else JamaGreen,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp
+                                )
+                                if (item.isDuplicate) {
+                                    Text(LanguageStrings.get("csv_exists_skipped", currentLang), fontSize = 11.sp, color = TextSecondary)
                                 }
                             }
                         }
@@ -1456,7 +1471,7 @@ fun ShopProfileScreen(
                                 val imported = withContext(Dispatchers.IO) {
                                     repository.importCustomersFromCsv(csvPreviews)
                                 }
-                                statusMessage = "✅ Successfully imported $imported customers from CSV!"
+                                statusMessage = "✅ ${LanguageStrings.get("csv_imported", currentLang)} $imported"
                                 showCsvPreviewDialog = false
                             } catch (e: Exception) {
                                 statusMessage = "❌ Import failed: ${e.message}"
@@ -1465,6 +1480,7 @@ fun ShopProfileScreen(
                             }
                         }
                     },
+                    enabled = newCount > 0 && progressMessage == null,
                     colors = ButtonDefaults.buttonColors(containerColor = JamaGreen)
                 ) {
                     Text(LanguageStrings.get("btn_confirm_import", currentLang) + " ($newCount)")
