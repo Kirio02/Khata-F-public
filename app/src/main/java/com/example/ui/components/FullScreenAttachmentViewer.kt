@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import com.example.ui.theme.OnBrand
 import android.content.Context
 import android.content.Intent
 import android.graphics.BitmapFactory
@@ -72,7 +73,7 @@ fun FullScreenAttachmentViewer(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
     ) {
-        FullScreenDialogWindow()
+        FullScreenDialogWindow(blackBackground = true)
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -110,13 +111,13 @@ fun FullScreenAttachmentViewer(
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = LanguageStrings.get("btn_cancel", currentLang),
-                        tint = SurfaceWhite
+                        tint = OnBrand
                     )
                 }
 
                 Text(
                     text = "${pagerState.currentPage + 1} / ${attachments.size}",
-                    color = SurfaceWhite,
+                    color = OnBrand,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp
                 )
@@ -131,7 +132,7 @@ fun FullScreenAttachmentViewer(
                         Icon(
                             imageVector = Icons.Default.Share,
                             contentDescription = LanguageStrings.get("btn_share", currentLang),
-                            tint = SurfaceWhite
+                            tint = OnBrand
                         )
                     }
 
@@ -141,7 +142,7 @@ fun FullScreenAttachmentViewer(
                             Icon(
                                 imageVector = Icons.Default.Delete,
                                 contentDescription = LanguageStrings.get("btn_delete", currentLang),
-                                tint = UdharRed
+                                tint = Color(0xFFFF8A80) // always on black
                             )
                         }
                     }
@@ -175,11 +176,11 @@ fun FullScreenAttachmentViewer(
                         )
                         if (onUpdateCaption != null && !isEditingCaption) {
                             TextButton(onClick = { isEditingCaption = true }) {
-                                Icon(Icons.Default.Edit, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(14.dp))
+                                Icon(Icons.Default.Edit, contentDescription = null, tint = OnBrand, modifier = Modifier.size(14.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
                                     text = LanguageStrings.get("btn_edit", currentLang),
-                                    color = PrimaryBlue,
+                                    color = OnBrand,
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -207,7 +208,7 @@ fun FullScreenAttachmentViewer(
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedTextColor = Color.White,
                                     unfocusedTextColor = Color.White,
-                                    focusedBorderColor = PrimaryBlue,
+                                    focusedBorderColor = OnBrand,
                                     unfocusedBorderColor = Color.Gray
                                 )
                             )

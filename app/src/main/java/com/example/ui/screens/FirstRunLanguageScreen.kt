@@ -92,7 +92,7 @@ fun FirstRunLanguageScreen(
                     text = gujaratiLabel,
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = SurfaceWhite
                 )
             }
 
@@ -111,7 +111,7 @@ fun FirstRunLanguageScreen(
                     text = hindiLabel,
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = SurfaceWhite
                 )
             }
 
@@ -130,7 +130,7 @@ fun FirstRunLanguageScreen(
                     text = hinglishLabel,
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = SurfaceWhite
                 )
             }
 

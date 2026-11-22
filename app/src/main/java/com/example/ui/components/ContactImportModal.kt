@@ -349,10 +349,10 @@ fun ContactImportModal(
                                 .fillMaxWidth()
                                 .minTouchTarget()
                         ) {
+                            // no explicit colour: the button supplies a readable one when disabled too
                             Text(
                                 text = buttonTitle,
-                                fontWeight = FontWeight.Bold,
-                                color = SurfaceWhite
+                                fontWeight = FontWeight.Bold
                             )
                         }
                     }

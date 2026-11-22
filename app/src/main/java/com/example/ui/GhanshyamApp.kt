@@ -200,8 +200,8 @@ fun GhanshyamApp(
                 TopAppBar(
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = androidx.compose.ui.graphics.Color.Transparent,
-                        titleContentColor = SurfaceWhite,
-                        actionIconContentColor = SurfaceWhite
+                        titleContentColor = OnBrand,
+                        actionIconContentColor = OnBrand
                     ),
                     title = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -221,7 +221,7 @@ fun GhanshyamApp(
                                         .background(BrandMaroon),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Icon(Icons.Default.Store, contentDescription = null, tint = SurfaceWhite, modifier = Modifier.size(20.dp))
+                                    Icon(Icons.Default.Store, contentDescription = null, tint = OnBrand, modifier = Modifier.size(20.dp))
                                 }
                             }
                             Spacer(modifier = Modifier.width(10.dp))
@@ -241,7 +241,7 @@ fun GhanshyamApp(
                                     text = storeProfile.storeName.ifBlank { "Ghanshyam Kids Wear" },
                                     style = MaterialTheme.typography.titleMedium.copy(fontFamily = BrandSerifFontFamily),
                                     fontWeight = FontWeight.Bold,
-                                    color = SurfaceWhite,
+                                    color = OnBrand,
                                     // The 64dp bar has no room for a second line, so the name follows the
                                     // phone font only until it would stop fitting on one.
                                     fontSize = with(androidx.compose.ui.platform.LocalDensity.current) {
@@ -572,8 +572,9 @@ private fun StatusBarIcons(light: Boolean) {
     val view = androidx.compose.ui.platform.LocalView.current
     val window = (view.context as? android.app.Activity)?.window ?: return
     val controller = androidx.core.view.WindowCompat.getInsetsController(window, view)
-    SideEffect { controller.isAppearanceLightStatusBars = !light }
+    val dark = AppTheme.palette.isDark
+    SideEffect { controller.isAppearanceLightStatusBars = !light && !dark }
     DisposableEffect(controller) {
-        onDispose { controller.isAppearanceLightStatusBars = true }
+        onDispose { controller.isAppearanceLightStatusBars = !AppTheme.palette.isDark }
     }
 }

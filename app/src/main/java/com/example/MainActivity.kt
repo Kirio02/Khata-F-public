@@ -1,5 +1,7 @@
 package com.example
 
+import android.content.res.Configuration
+import com.example.ui.theme.AppTheme
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
@@ -44,6 +46,7 @@ class MainActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        AppTheme.load(this)
         enableEdgeToEdge()
 
         appLockManager = AppLockManager(this)
@@ -156,6 +159,12 @@ class MainActivity : FragmentActivity() {
         }
     }
 
+
+    // uiMode is in configChanges, so switching the phone's dark mode doesn't close open dialogs.
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        AppTheme.onSystemChanged(newConfig)
+    }
 
     override fun onStop() {
         super.onStop()

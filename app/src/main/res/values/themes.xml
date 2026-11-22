@@ -1,7 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- The window colours only show until Compose draws; ui/theme handles the rest. -->
     <style name="Theme.MyApplication" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:statusBarColor">@color/white</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowBackground">@color/white</item>
+    </style>
+    <style name="Theme.MyApplication.Cream">
+        <item name="android:windowBackground">@color/cream_page</item>
+    </style>
+    <style name="Theme.MyApplication.Dark">
+        <item name="android:windowBackground">@color/dark_page</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+    <style name="Theme.MyApplication.System">
+        <item name="android:windowBackground">@color/system_page</item>
+    </style>
+
+    <style name="Calendar.White" parent="android:Theme.Material.Light.Dialog.Alert">
+        <item name="android:colorAccent">#323433</item>
+        <item name="android:colorBackground">#FFFFFF</item>
+        <item name="android:colorBackgroundFloating">#FFFFFF</item>
+    </style>
+    <style name="Calendar.Cream" parent="android:Theme.Material.Light.Dialog.Alert">
+        <item name="android:colorAccent">#323433</item>
+        <item name="android:colorBackground">#EFE6D6</item>
+        <item name="android:colorBackgroundFloating">#EFE6D6</item>
+    </style>
+    <style name="Calendar.Dark" parent="android:Theme.Material.Dialog.Alert">
+        <item name="android:colorAccent">#D6B98C</item>
+        <item name="android:colorBackground">#222222</item>
+        <item name="android:colorBackgroundFloating">#222222</item>
     </style>
 </resources>

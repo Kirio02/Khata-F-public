@@ -183,6 +183,7 @@ fun CashbookScreen(
         customPickedDayMillis?.let { cal.timeInMillis = it }
         val dialog = DatePickerDialog(
             context,
+            AppTheme.calendarStyle,
             { _, year, month, dayOfMonth ->
                 val pickedCal = Calendar.getInstance()
                 pickedCal.set(year, month, dayOfMonth, 12, 0, 0)

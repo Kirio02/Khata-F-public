@@ -102,7 +102,7 @@ fun LockScreen(
                     text = storeName.ifBlank { "Ghanshyam Kids Wear" },
                     style = MaterialTheme.typography.titleLarge.copy(fontFamily = BrandSerifFontFamily),
                     fontWeight = FontWeight.Bold,
-                    color = SurfaceWhite,
+                    color = OnBrand,
                     fontSize = 20.sp
                 )
             }
@@ -115,13 +115,13 @@ fun LockScreen(
             modifier = Modifier
                 .size(64.dp)
                 .clip(CircleShape)
-                .background(BrandMaroon.copy(alpha = 0.12f)),
+                .background(AccentCyan.copy(alpha = 0.12f)),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Default.Lock,
                 contentDescription = null,
-                tint = BrandMaroon,
+                tint = AccentCyan,
                 modifier = Modifier.size(32.dp)
             )
         }
@@ -147,8 +147,8 @@ fun LockScreen(
                     modifier = Modifier
                         .size(18.dp)
                         .clip(CircleShape)
-                        .background(if (isFilled) BrandCharcoal else Color.Transparent)
-                        .border(2.dp, if (isFilled) BrandCharcoal else Color.LightGray, CircleShape)
+                        .background(if (isFilled) PrimaryBlue else Color.Transparent)
+                        .border(2.dp, if (isFilled) PrimaryBlue else FieldBorder, CircleShape)
                 )
             }
         }
@@ -261,7 +261,7 @@ private fun KeypadButton(
                 onClick = onClick
             ),
         shape = CircleShape,
-        color = Color(0xFFF1F5F9),
+        color = ChipActiveBg,
         tonalElevation = 2.dp
     ) {
         Box(contentAlignment = Alignment.Center) {

@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import com.example.ui.components.ThemePickerCard
 import android.Manifest
 import android.content.ClipboardManager
 import android.content.Context
@@ -315,6 +316,9 @@ fun ShopProfileScreen(
             .padding(16.dp)
             .padding(bottom = 24.dp)
     ) {
+        ThemePickerCard(lang = currentLang)
+        Spacer(modifier = Modifier.height(16.dp))
+
         // Shop Profile Card
         Card(
             modifier = Modifier.fillMaxWidth(),

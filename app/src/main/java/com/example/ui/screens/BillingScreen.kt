@@ -1126,7 +1126,7 @@ fun BillingScreen(
                                             AppRepository.InvoicePaymentStatus.PAID ->
                                                 Triple(LanguageStrings.get("status_paid", currentLang), JamaGreen.copy(alpha = 0.15f), JamaGreen)
                                             AppRepository.InvoicePaymentStatus.PARTLY_PAID ->
-                                                Triple(LanguageStrings.get("status_partly_paid", currentLang), Color(0xFFFF9800).copy(alpha = 0.15f), Color(0xFFE65100))
+                                                Triple(LanguageStrings.get("status_partly_paid", currentLang), WarningAmber.copy(alpha = 0.15f), WarningAmber)
                                             AppRepository.InvoicePaymentStatus.UNPAID ->
                                                 Triple(LanguageStrings.get("status_unpaid", currentLang), UdharRed.copy(alpha = 0.15f), UdharRed)
                                             AppRepository.InvoicePaymentStatus.CANCELLED ->
@@ -1194,7 +1194,7 @@ fun BillingScreen(
                                                 Text(
                                                     text = "Recv: ₹${"%.0f".format(receivedAmt)} • Pending: ₹${"%.0f".format(outstandingAmt)}",
                                                     fontSize = 11.sp,
-                                                    color = Color(0xFFE65100),
+                                                    color = WarningAmber,
                                                     fontWeight = FontWeight.SemiBold
                                                 )
                                             }

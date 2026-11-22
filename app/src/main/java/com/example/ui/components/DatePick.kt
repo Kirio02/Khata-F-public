@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import com.example.ui.theme.AppTheme
 import android.app.DatePickerDialog
 import android.content.Context
 import androidx.compose.foundation.layout.PaddingValues
@@ -45,6 +46,7 @@ private fun showCalendar(
     val cal = Calendar.getInstance().apply { timeInMillis = initial }
     DatePickerDialog(
         context,
+        AppTheme.calendarStyle,
         { _, year, month, day -> onPicked(EntryDate.onDay(year, month, day, initial)) },
         cal.get(Calendar.YEAR),
         cal.get(Calendar.MONTH),

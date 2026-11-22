@@ -2,33 +2,33 @@ package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Shop Brand Palette Tokens (From Shop Card)
-val BrandCharcoal = Color(0xFF323433) // Primary UI color (#323433)
-val BrandMaroon = Color(0xFF83180D)   // Header band, logo area, and highlights only (#83180D)
-
-// Primary UI Colors (Charcoal is the primary UI colour)
-val PrimaryBlue = BrandCharcoal
-val PrimaryBlueDark = Color(0xFF212322)
-val AccentCyan = BrandMaroon
-
-// Money colours: Green for received and clearly brighter red for given (never maroon)
-val UdharRed = Color(0xFFDC2626) // Brighter red for given (Udhar)
-val JamaGreen = Color(0xFF16A34A) // Green for received (Jama)
-
-val SoftBackground = Color(0xFFF9FAFB)
-val SurfaceWhite = Color(0xFFFFFFFF)
-val CardBorder = Color(0xFFE5E7EB)
-val FieldBorder = Color(0xFF6B7280) // Visible outline for text fields and outlined buttons
-val TextPrimary = Color(0xFF111827)
-val TextSecondary = Color(0xFF4B5563)
-val TextTertiary = Color(0xFF9CA3AF)
-
-val ChipActiveBg = Color(0xFFF3F4F6)
-val ChipActiveText = BrandCharcoal
-val ChipInactiveBg = Color(0xFFF9FAFB)
-val ChipInactiveText = Color(0xFF4B5563)
-
+// Brand colours: the same in every theme. Use OnBrand for anything drawn on them (or on black).
+val BrandCharcoal = Color(0xFF323433) // Header band (#323433)
+val BrandMaroon = Color(0xFF83180D)   // Logo area only (#83180D)
 val GoldAccent = Color(0xFFD4AF37)
-val WarningAmber = Color(0xFFD97706)
+val OnBrand = Color(0xFFFFFFFF)
 val PremiumBannerBg = BrandCharcoal
 
+// Themed colours. These are getters on purpose: never copy one into a top-level val,
+// or it will stop following the theme.
+val PrimaryBlue: Color get() = AppTheme.palette.primary // the primary UI colour (charcoal; light in Dark)
+val AccentCyan: Color get() = AppTheme.palette.accent
+
+// Money colours: green for received and clearly brighter red for given (never maroon)
+val UdharRed: Color get() = AppTheme.palette.red
+val JamaGreen: Color get() = AppTheme.palette.green
+
+val SoftBackground: Color get() = AppTheme.palette.page
+val SurfaceWhite: Color get() = AppTheme.palette.card // card colour; white only in the White theme
+val CardBorder: Color get() = AppTheme.palette.border
+val FieldBorder: Color get() = AppTheme.palette.fieldBorder // Visible outline for text fields and outlined buttons
+val TextPrimary: Color get() = AppTheme.palette.text
+val TextSecondary: Color get() = AppTheme.palette.textSecondary
+val TextTertiary: Color get() = AppTheme.palette.textTertiary
+
+val ChipActiveBg: Color get() = AppTheme.palette.chipActive
+val ChipActiveText: Color get() = AppTheme.palette.primary
+val ChipInactiveBg: Color get() = AppTheme.palette.chipInactive
+val ChipInactiveText: Color get() = AppTheme.palette.textSecondary
+
+val WarningAmber: Color get() = AppTheme.palette.amber

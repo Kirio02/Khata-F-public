@@ -84,7 +84,7 @@ fun AppLoadingScreen(
                     Icon(
                         imageVector = Icons.Default.Store,
                         contentDescription = null,
-                        tint = SurfaceWhite,
+                        tint = OnBrand,
                         modifier = Modifier.size(38.dp)
                     )
                 }
@@ -104,7 +104,7 @@ fun AppLoadingScreen(
             Spacer(modifier = Modifier.height(36.dp))
 
             CircularProgressIndicator(
-                color = BrandCharcoal,
+                color = PrimaryBlue,
                 strokeWidth = 3.dp,
                 modifier = Modifier.size(36.dp)
             )

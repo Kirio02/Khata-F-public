@@ -257,11 +257,13 @@ fun AccountantReportsScreen(
                                         val calPicker = Calendar.getInstance()
                                         DatePickerDialog(
                                             context,
+                                            AppTheme.calendarStyle,
                                             { _, y, m, d ->
                                                 val c = Calendar.getInstance().apply { set(y, m, d, 0, 0, 0) }
                                                 customStartDate = c.timeInMillis
                                                 DatePickerDialog(
                                                     context,
+                                                    AppTheme.calendarStyle,
                                                     { _, ey, em, ed ->
                                                         val ec = Calendar.getInstance().apply { set(ey, em, ed, 23, 59, 59) }
                                                         customEndDate = ec.timeInMillis
