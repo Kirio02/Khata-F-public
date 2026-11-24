@@ -677,39 +677,44 @@ fun KhataScreen(
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
+                                        // The tag sits under the amount, not beside the name: beside a
+                                        // long name it was squeezed to zero width and wrapped one letter
+                                        // per line, stretching the card to most of the screen.
                                         Column(modifier = Modifier.weight(1f)) {
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Text(
-                                                    text = party.name,
-                                                    fontWeight = FontWeight.Bold,
-                                                    fontSize = 13.sp,
-                                                    color = TextPrimary,
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis
-                                                )
-                                                if (isOverdue) {
-                                                    Spacer(modifier = Modifier.width(6.dp))
-                                                    Surface(
-                                                        shape = RoundedCornerShape(4.dp),
-                                                        color = UdharRed.copy(alpha = 0.12f)
-                                                    ) {
-                                                        Text(
-                                                            text = LanguageStrings.get("overdue_tag", lang),
-                                                            color = UdharRed,
-                                                            fontSize = 9.sp,
-                                                            fontWeight = FontWeight.Bold,
-                                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
-                                                        )
-                                                    }
-                                                }
-                                            }
+                                            Text(
+                                                text = party.name,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 13.sp,
+                                                color = TextPrimary,
+                                                maxLines = 2,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
                                             Text(
                                                 text = formatIndianCurrency(amount),
                                                 fontWeight = FontWeight.Bold,
                                                 fontSize = 13.sp,
-                                                color = UdharRed
+                                                color = UdharRed,
+                                                maxLines = 1,
+                                                softWrap = false
                                             )
+                                            if (isOverdue) {
+                                                Surface(
+                                                    shape = RoundedCornerShape(4.dp),
+                                                    color = UdharRed.copy(alpha = 0.12f)
+                                                ) {
+                                                    Text(
+                                                        text = LanguageStrings.get("overdue_tag", lang),
+                                                        color = UdharRed,
+                                                        fontSize = 11.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis,
+                                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                                    )
+                                                }
+                                            }
                                         }
+                                        Spacer(modifier = Modifier.width(6.dp))
 
                                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                             // WhatsApp Reminder Button

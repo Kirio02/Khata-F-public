@@ -103,6 +103,8 @@ fun CustomerDetailScreen(
     var billToMarkReceived by remember { mutableStateOf<Transaction?>(null) }
     var showMarkAllReceivedDialog by remember { mutableStateOf(false) }
     var showStatementDialog by remember { mutableStateOf(false) }
+    var showDeletePartyDialog by remember { mutableStateOf(false) }
+    var txToDelete by remember { mutableStateOf<Transaction?>(null) }
     var txToEdit by remember { mutableStateOf<Transaction?>(null) }
     var showEditPhoneDialog by remember { mutableStateOf(false) }
     var phoneInputText by remember { mutableStateOf(currentCustomer.phone) }
@@ -153,10 +155,22 @@ fun CustomerDetailScreen(
                 )
             } else {
                 Column {
-                TopAppBar(
-                    title = {
+                // Not a TopAppBar: its fixed height cut off the phone line under a long
+                // name at a large font. This row grows with the text instead.
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(SurfaceWhite)
+                        .windowInsetsPadding(TopAppBarDefaults.windowInsets)
+                        .heightIn(min = 64.dp)
+                        .padding(vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = TextPrimary)
+                        }
                         Column(
-                            modifier = Modifier.clickable {
+                            modifier = Modifier.weight(1f).clickable {
                                 if (!hasPhone) {
                                     phoneInputText = ""
                                     showEditPhoneDialog = true
@@ -206,14 +220,23 @@ fun CustomerDetailScreen(
                                 fontWeight = if (phoneOk) FontWeight.Normal else FontWeight.SemiBold
                             )
                         }
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = TextPrimary)
+                        Box {
+                            var menuOpen by remember { mutableStateOf(false) }
+                            IconButton(onClick = { menuOpen = true }) {
+                                Icon(Icons.Default.MoreVert, contentDescription = LanguageStrings.get("more_options", currentLang), tint = TextPrimary)
+                            }
+                            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                                DropdownMenuItem(
+                                    text = { Text(text = LanguageStrings.get("delete_party", currentLang), color = UdharRed, fontWeight = FontWeight.Bold) },
+                                    leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = UdharRed) },
+                                    onClick = {
+                                        menuOpen = false
+                                        showDeletePartyDialog = true
+                                    }
+                                )
+                            }
                         }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceWhite)
-                )
+                }
                 // Labelled actions (icons alone were hard to tell apart).
                 Row(
                     modifier = Modifier
@@ -1420,6 +1443,107 @@ fun CustomerDetailScreen(
         )
     }
 
+    // Deleting an entry cannot be undone, so it is never one tap.
+    txToDelete?.let { tx ->
+        val linked = transactions.count { it.linkedToTxId == tx.id }
+        AlertDialog(
+            onDismissRequest = { txToDelete = null },
+            title = { Text(text = LanguageStrings.get("delete_entry_title", currentLang), fontWeight = FontWeight.Bold) },
+            text = {
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = formatIndianCurrency(tx.amount) + " • " + RelativeDate.format(tx.date, currentLang),
+                        fontWeight = FontWeight.Bold
+                    )
+                    if (linked > 0) {
+                        Text(
+                            text = LanguageStrings.get("delete_entry_linked", currentLang).replace("{n}", linked.toString()),
+                            color = UdharRed
+                        )
+                    }
+                    Text(text = LanguageStrings.get("cannot_undo", currentLang), color = TextSecondary)
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        repository.deleteTransaction(tx.id)
+                        txToDelete = null
+                        txToEdit = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = UdharRed, contentColor = OnBrand)
+                ) { Text(text = LanguageStrings.get("btn_delete", currentLang), fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = {
+                TextButton(onClick = { txToDelete = null }) {
+                    Text(text = LanguageStrings.get("btn_cancel", currentLang))
+                }
+            }
+        )
+    }
+
+    // Deleting a party removes all its entries, photos and cashbook lines for good.
+    // With money still pending, the owner must also tick that he means it.
+    if (showDeletePartyDialog) {
+        val entryCount = transactions.count { it.customerId == currentCustomer.id }
+        val pending = kotlin.math.abs(balance) > 0.009
+        var understood by remember { mutableStateOf(false) }
+        AlertDialog(
+            onDismissRequest = { showDeletePartyDialog = false },
+            title = { Text(text = LanguageStrings.get("delete_party_title", currentLang), fontWeight = FontWeight.Bold) },
+            text = {
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(text = currentCustomer.name, fontWeight = FontWeight.Bold)
+                    if (pending) {
+                        Text(
+                            text = LanguageStrings.get("delete_party_pending", currentLang).replace("{amount}", formatIndianCurrency(kotlin.math.abs(balance))),
+                            color = UdharRed,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Text(text = LanguageStrings.get("delete_party_desc", currentLang).replace("{n}", entryCount.toString()))
+                    Text(text = LanguageStrings.get("delete_party_backup_hint", currentLang), color = TextSecondary)
+                    if (pending) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { understood = !understood }
+                        ) {
+                            Checkbox(checked = understood, onCheckedChange = { understood = it })
+                            Text(
+                                text = LanguageStrings.get("delete_party_confirm_pending", currentLang)
+                                    .replace("{amount}", formatIndianCurrency(kotlin.math.abs(balance)))
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    enabled = !pending || understood,
+                    onClick = {
+                        showDeletePartyDialog = false
+                        repository.deleteCustomer(currentCustomer.id)
+                        onBack()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = UdharRed, contentColor = OnBrand)
+                ) { Text(text = LanguageStrings.get("btn_delete", currentLang), fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeletePartyDialog = false }) {
+                    Text(text = LanguageStrings.get("btn_cancel", currentLang))
+                }
+            }
+        )
+    }
+
     // Statement Dialog (PDF & WhatsApp Text Export)
     if (showStatementDialog) {
         var filterType by remember { mutableStateOf(StatementFilter.ALL_ENTRIES) }
@@ -1667,10 +1791,7 @@ fun CustomerDetailScreen(
 
                     // Delete button inside edit dialog
                     TextButton(
-                        onClick = {
-                            repository.deleteTransaction(editingTx.id)
-                            txToEdit = null
-                        },
+                        onClick = { txToDelete = editingTx },
                         colors = ButtonDefaults.textButtonColors(contentColor = UdharRed)
                     ) {
                         Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
