@@ -232,7 +232,9 @@ object StatementGenerator {
         statement: StatementResult,
         storeProfile: StoreProfile,
         /** Entry id -> photo file paths, shown as thumbnails and full size at the end. */
-        photosByTx: Map<String, List<String>> = emptyMap()
+        photosByTx: Map<String, List<String>> = emptyMap(),
+        /** Used for the PDF words unless a PDF language is picked in More > PDF ka Design. */
+        appLang: AppLanguage = AppLanguage.HINGLISH
     ): File {
         val statementsDir = File(context.cacheDir, "statements").apply { mkdirs() }
         val safeName = statement.customer.name.replace("[^a-zA-Z0-9_.-]".toRegex(), "_")
@@ -240,10 +242,12 @@ object StatementGenerator {
 
         try {
             com.example.ui.components.EntryDetail.load(context)
+            val style = PdfStyle.load(context)
             StatementPdf.render(
                 statement = statement,
                 store = storeProfile,
-                style = PdfStyle.load(context),
+                style = style,
+                lang = style.langFor(appLang),
                 detailMode = com.example.ui.components.EntryDetail.mode,
                 photosByTx = photosByTx,
                 out = pdfFile

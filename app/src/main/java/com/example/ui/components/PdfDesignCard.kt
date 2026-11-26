@@ -53,7 +53,9 @@ import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
 import com.example.ui.util.LanguageStrings
 import com.example.ui.util.PdfAccent
+import com.example.ui.util.PdfLang
 import com.example.ui.util.PdfLayout
+import com.example.ui.util.PdfText
 import com.example.ui.util.PdfPaper
 import com.example.ui.util.PdfStyle
 
@@ -102,9 +104,22 @@ fun PdfDesignCard(lang: AppLanguage) {
 
             if (expanded) {
                 Spacer(modifier = Modifier.height(14.dp))
-                PdfPreview(style)
+                PdfPreview(style, style.langFor(lang))
 
                 Spacer(modifier = Modifier.height(14.dp))
+                Text(text = t("pdf_lang_label"), style = MaterialTheme.typography.labelLarge, color = TextSecondary)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    PdfLang.entries.forEach { pl ->
+                        FilterChip(
+                            selected = style.langFor(lang) == pl,
+                            onClick = { update(style.copy(lang = pl)) },
+                            label = { Text(text = pl.label, fontWeight = FontWeight.Bold) }
+                        )
+                    }
+                }
+                Text(text = t("pdf_lang_hint"), style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+
+                Spacer(modifier = Modifier.height(12.dp))
                 Text(text = t("pdf_layout_label"), style = MaterialTheme.typography.labelLarge, color = TextSecondary)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(
@@ -180,7 +195,9 @@ fun PdfDesignCard(lang: AppLanguage) {
 
 /** A tiny drawing of the PDF's top, so the colour choice is visible before sharing. */
 @Composable
-private fun PdfPreview(style: PdfStyle) {
+private fun PdfPreview(style: PdfStyle, pdfLang: PdfLang) {
+    fun w(key: String) = PdfText.get(key, pdfLang)
+    val dr = w("debit").let { if (it == "Debit") "Dr" else it }
     val accent = Color(style.accent.rgb)
     Column(
         modifier = Modifier
@@ -196,12 +213,12 @@ private fun PdfPreview(style: PdfStyle) {
             Box(
                 modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(Color(style.tint)).padding(8.dp)
             ) {
-                Text(text = "Balance Due  ₹6,775.00", color = Color(0xFFC81E1E), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                Text(text = w("balance_due") + "  ₹6,775.00", color = Color(0xFFC81E1E), fontWeight = FontWeight.Bold, fontSize = 13.sp)
             }
             Spacer(modifier = Modifier.height(6.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(text = "CH. NO. 985", color = accent, fontWeight = FontWeight.Bold, fontSize = 12.sp, modifier = Modifier.weight(1f))
-                Text(text = "₹3,325.00 Dr", color = Color(0xFFC81E1E), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                Text(text = "₹3,325.00 $dr", color = Color(0xFFC81E1E), fontWeight = FontWeight.Bold, fontSize = 12.sp)
             }
         }
     }

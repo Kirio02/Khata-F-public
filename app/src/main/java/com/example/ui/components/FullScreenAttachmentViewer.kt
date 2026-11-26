@@ -65,6 +65,7 @@ fun FullScreenAttachmentViewer(
 
     var showDeleteDialog by remember { mutableStateOf(false) }
     var isEditingCaption by remember { mutableStateOf(false) }
+    var editing by remember { mutableStateOf<Attachment?>(null) }
 
     val currentAttachment = attachments.getOrNull(pagerState.currentPage) ?: attachments.first()
     var captionText by remember(currentAttachment.id) { mutableStateOf(currentAttachment.caption) }
@@ -123,6 +124,17 @@ fun FullScreenAttachmentViewer(
                 )
 
                 Row {
+                    // Edit: crop, rotate or write on the photo.
+                    if (currentAttachment.mimeType.startsWith("image")) {
+                        IconButton(onClick = { editing = currentAttachment }) {
+                            Icon(
+                                imageVector = Icons.Default.Crop,
+                                contentDescription = LanguageStrings.get("photo_edit_btn", currentLang),
+                                tint = OnBrand
+                            )
+                        }
+                    }
+
                     // Share Button
                     IconButton(
                         onClick = {
@@ -236,6 +248,10 @@ fun FullScreenAttachmentViewer(
                 }
             }
 
+            editing?.let { att ->
+                PhotoEditorDialog(attachment = att, currentLang = currentLang, onDismiss = { editing = null })
+            }
+
             // Confirm Delete Dialog
             if (showDeleteDialog) {
                 AlertDialog(
@@ -278,7 +294,8 @@ private fun ZoomableImageView(attachment: Attachment) {
     var offsetY by remember { mutableFloatStateOf(0f) }
 
     val file = remember(attachment.filePath) { File(attachment.filePath) }
-    val bitmap = remember(attachment.filePath) {
+    // PhotoEdits.version: reload after the photo is cropped or written on.
+    val bitmap = remember(attachment.filePath, PhotoEdits.version) {
         if (file.exists()) BitmapFactory.decodeFile(file.absolutePath) else null
     }
 

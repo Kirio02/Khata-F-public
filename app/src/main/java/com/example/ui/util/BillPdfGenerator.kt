@@ -47,9 +47,11 @@ object BillPdfGenerator {
 
     fun generate(context: Context, store: StoreProfile, data: BillData, lang: AppLanguage): File {
         val inv = data.invoice
-        fun t(key: String) = LanguageStrings.get(key, lang)
-        // Owner's PDF design (More > PDF ka design): phone-width page or A5 for printing.
+        // Owner's PDF design (More > PDF ka design): phone-width page or A5 for printing,
+        // and the PDF language (follows the app language unless one is picked there).
         val style = PdfStyle.load(context)
+        val pdfLang = style.langFor(lang)
+        fun t(key: String) = PdfText.get(key, pdfLang)
         val W = if (style.layout == PdfLayout.PHONE) 360 else PAGE_W
         val H = if (style.layout == PdfLayout.PHONE) 640 else PAGE_H
 

@@ -61,6 +61,7 @@ fun AttachmentPickerStrip(
     var tempCameraPath by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingRemoval by remember { mutableStateOf<Attachment?>(null) }
     var viewerIndex by remember { mutableStateOf<Int?>(null) }
+    var editing by remember { mutableStateOf<Attachment?>(null) }
 
     fun removeAttachment(att: Attachment) {
         AttachmentManager.deleteAttachmentFiles(att)
@@ -89,6 +90,7 @@ fun AttachmentPickerStrip(
                         ownerId = ownerId
                     )
                     onAttachmentsChanged(attachments + att)
+                    editing = att // offer crop / write right after taking the photo
                 } catch (e: Exception) {
                     Toast.makeText(context, LanguageStrings.get("photo_add_failed", currentLang), Toast.LENGTH_SHORT).show()
                 } finally {
@@ -217,7 +219,7 @@ fun AttachmentPickerStrip(
                 val thumbPath = att.thumbPath.ifBlank { att.filePath }
                 // Decode off the main thread, downsampled, so cheap phones don't stutter
                 // (and a missing thumb doesn't load a full 1600px photo).
-                val bitmap by produceState<android.graphics.Bitmap?>(null, thumbPath) {
+                val bitmap by produceState<android.graphics.Bitmap?>(null, thumbPath, PhotoEdits.version) {
                     value = withContext(Dispatchers.IO) { decodeThumbnail(thumbPath, THUMB_DECODE_PX) }
                 }
 
@@ -317,6 +319,10 @@ fun AttachmentPickerStrip(
                 if (attachments.size <= 1) viewerIndex = null
             }
         )
+    }
+
+    editing?.let { att ->
+        PhotoEditorDialog(attachment = att, currentLang = currentLang, onDismiss = { editing = null })
     }
 
     // Modal Option Dialog: Camera | Gallery | PDF

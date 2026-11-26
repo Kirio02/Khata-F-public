@@ -24,8 +24,12 @@ data class PdfStyle(
     val layout: PdfLayout = PdfLayout.PHONE,
     val accent: PdfAccent = PdfAccent.BLUE,
     val paper: PdfPaper = PdfPaper.WHITE,
-    val photos: Boolean = true
+    val photos: Boolean = true,
+    /** PDF words' language; null = same as the app language. */
+    val lang: PdfLang? = null
 ) {
+    fun langFor(app: com.example.model.AppLanguage): PdfLang = lang ?: PdfLang.from(app)
+
     /** A pale tint of the accent for boxes and alternate rows, mixed over the paper colour. */
     val tint: Int get() = mix(accent.rgb, paper.rgb, 0.08f)
     val line: Int get() = mix(accent.rgb, paper.rgb, 0.18f)
@@ -39,7 +43,8 @@ data class PdfStyle(
                 layout = PdfLayout.entries.firstOrNull { it.name == p.getString("pdf_layout", null) } ?: PdfLayout.PHONE,
                 accent = PdfAccent.entries.firstOrNull { it.name == p.getString("pdf_accent", null) } ?: PdfAccent.BLUE,
                 paper = PdfPaper.entries.firstOrNull { it.name == p.getString("pdf_paper", null) } ?: PdfPaper.WHITE,
-                photos = p.getBoolean("pdf_photos", true)
+                photos = p.getBoolean("pdf_photos", true),
+                lang = PdfLang.entries.firstOrNull { it.name == p.getString("pdf_lang", null) }
             )
         }
 
@@ -49,6 +54,7 @@ data class PdfStyle(
                 .putString("pdf_accent", style.accent.name)
                 .putString("pdf_paper", style.paper.name)
                 .putBoolean("pdf_photos", style.photos)
+                .apply { if (style.lang != null) putString("pdf_lang", style.lang.name) else remove("pdf_lang") }
                 .apply()
         }
 

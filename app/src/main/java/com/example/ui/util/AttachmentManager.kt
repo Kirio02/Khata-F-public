@@ -140,6 +140,32 @@ object AttachmentManager {
         )
     }
 
+    /**
+     * Saves an edited (cropped / rotated / written-on) photo over [attachment]'s own files,
+     * so every entry, bill and backup that points at them sees the new picture. Writes to a
+     * temp file first, so a failure leaves the old photo intact.
+     */
+    suspend fun saveEditedImage(attachment: Attachment, edited: Bitmap): Attachment = withContext(Dispatchers.IO) {
+        val image = File(attachment.filePath)
+        val tmp = File(image.parentFile, "${image.name}.edit.tmp")
+        val scaled = scaleBitmap(edited, MAX_IMAGE_SIDE_PX)
+        try {
+            FileOutputStream(tmp).use { out -> scaled.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, out) }
+            if (!tmp.renameTo(image)) {
+                tmp.copyTo(image, overwrite = true)
+                tmp.delete()
+            }
+            val thumbPath = attachment.thumbPath.ifBlank { File(image.parentFile, "${attachment.id}_thumb.jpg").absolutePath }
+            val thumb = scaleBitmap(scaled, THUMB_SIDE_PX)
+            FileOutputStream(thumbPath).use { out -> thumb.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, out) }
+            if (thumb !== scaled) thumb.recycle()
+            attachment.copy(thumbPath = thumbPath, sizeBytes = image.length())
+        } finally {
+            tmp.delete()
+            if (scaled !== edited) scaled.recycle()
+        }
+    }
+
     suspend fun processAndSavePdf(
         context: Context,
         uri: Uri,

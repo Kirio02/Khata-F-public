@@ -937,7 +937,7 @@ fun CustomerDetailScreen(
                                         }
                                 ) {
                                     val thumbFile = remember(att.thumbPath) { File(att.thumbPath) }
-                                    val bm = remember(att.thumbPath) {
+                                    val bm = remember(att.thumbPath, com.example.ui.components.PhotoEdits.version) {
                                         if (thumbFile.exists()) BitmapFactory.decodeFile(thumbFile.absolutePath) else null
                                     }
                                     if (bm != null) {
@@ -1651,7 +1651,8 @@ fun CustomerDetailScreen(
                                     context = context,
                                     statement = statementData,
                                     storeProfile = storeProfile,
-                                    photosByTx = photosByTx
+                                    photosByTx = photosByTx,
+                                    appLang = currentLang
                                 )
                                 val uri = FileProvider.getUriForFile(
                                     context,
