@@ -6,18 +6,40 @@ The owner does the selling, the collection of payments and the deliveries all by
 
 > Built for a real shop. There is deliberately **no stock/inventory section**, because the stock changes with whatever is trending and selling.
 
+**Download:** the latest APK is on the [Releases page](https://github.com/Kirio02/Khata-F-public/releases/latest). If you already have the app, install the new APK over it; your data stays.
+
+## What's new in 1.2
+
+- **Challan number** on khata entries, shown as "CH. NO. 985". A *Challan / Note / Both* switch picks which boxes the entry form shows.
+- **Phone-friendly PDFs.** Statements and bills come in a *Mobile* size that reads on WhatsApp without zooming, or *A4* for printing. Pick the header colour and white or cream paper in **More > PDF ka Design**.
+- **Photos in the statement:** a numbered thumbnail beside each entry and the full photo at the end.
+- **Background colour:** White, Cream, Dark, or follow the phone (System).
+- **Pick any date** with a calendar when adding a bill, khata entry or cash entry.
+- **Delete a party**, and an "are you sure?" step before deleting an entry.
+- Layouts fixed for narrow phones with large text, and the contact import screen survives rotation.
+- Safer money handling: payments are sized from the saved data, and the balance import (CSV) never guesses an amount.
+
 ## Features
 
 **Khata (party ledger)**
 - Add customers and suppliers, or import them from phone contacts (duplicates are skipped).
-- "I Gave" / "I Got" entries with a running balance per party.
+- "I Gave" / "I Got" entries with a running balance per party, on any date picked from a calendar.
+- An optional challan number on each entry ("CH. NO. 985"), a note, or both.
 - Payments are matched to the oldest unpaid bills first, so each bill shows what is still pending.
 - Vasuli list: who owes money, and who is actually overdue (past the due date, or older than 15 days).
 - Send a statement or reminder on WhatsApp, SMS or call from the party screen. Invalid phone numbers are flagged.
+- Delete an entry or a whole party, always after a confirmation that shows the amounts involved.
+- Move balances over from another khata app with a simple CSV file (name, phone, balance). Rows that can't be read exactly are shown and skipped, never guessed.
 
 **Billing**
 - Create bills with GST details, discounts, delivery/packaging charges and a UPI QR code on the bill.
 - Several bill designs, PDF invoices, and sharing the PDF in one tap.
+
+**PDF statements and bills**
+- Mobile size (phone-width pages, large text) or A4 for printing.
+- Four header colours and white or cream paper, with a live preview.
+- Balance due at the top, then one clear block per entry with the challan number.
+- Entry photos as numbered thumbnails, with the full photos at the end.
 - Past bills, cancellation, and "Mark received" for part or full payment.
 
 **Cashbook**
@@ -37,6 +59,10 @@ The owner does the selling, the collection of payments and the deliveries all by
 - Backup and restore as a zip file.
 - If the app ever crashes, the next start shows the error with a Share button.
 
+**Look**
+- White, Cream, Dark or System background, chosen in More.
+- Works on narrow phones with large text and 3-button navigation.
+
 **Languages:** Hinglish, Hindi, Gujarati and English.
 
 ## Screenshots
@@ -48,6 +74,14 @@ The owner does the selling, the collection of payments and the deliveries all by
 | Quick entry | Past bills | Cashbook |
 |---|---|---|
 | <img src="docs/screenshots/quick-entry.png" width="220"> | <img src="docs/screenshots/billing-past-bills.png" width="220"> | <img src="docs/screenshots/cashbook.png" width="220"> |
+
+| Challan or note | Ledger with challan | Statement PDF (Mobile) |
+|---|---|---|
+| <img src="docs/screenshots/challan-entry.png" width="220"> | <img src="docs/screenshots/ledger-challan.png" width="220"> | <img src="docs/screenshots/statement-mobile.png" width="220"> |
+
+| PDF design | Dark background |
+|---|---|
+| <img src="docs/screenshots/pdf-design.png" width="220"> | <img src="docs/screenshots/dark-home.png" width="220"> |
 
 _Names and phone numbers shown are test data._
 
