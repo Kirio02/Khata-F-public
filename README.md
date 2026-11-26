@@ -8,6 +8,16 @@ The owner does the selling, the collection of payments and the deliveries all by
 
 **Download:** the latest APK is on the [Releases page](https://github.com/Kirio02/Khata-F-public/releases/latest). If you already have the app, install the new APK over it; your data stays.
 
+## What's new in 1.3
+
+- **Edit photos:** crop, rotate or write on a photo with your finger, right after taking it or later from the photo viewer.
+- **PDF language:** pick English, Hinglish, Hindi, Gujlish (Gujarati words in English letters) or Gujarati for statements and bills. *Debit / Credit* become *Udhar / Jama*.
+- **Tap a photo in the statement PDF** to jump to the full photo, and "Back to entry" to return. It all stays inside the PDF: no upload, no internet.
+- **WhatsApp remind:** choose to send a short text or the full statement PDF. The text statement now uses the same language as the PDF.
+- **Challan number in quick entry**, and older entries whose note was just a number (like "852") now show it as "CH. NO. 852".
+- The Vasuli list on the home screen folds up to save space.
+- The English labels now say "You Gave (Udhar)" and "You Got (Jama)".
+
 ## What's new in 1.2
 
 - **Challan number** on khata entries, shown as "CH. NO. 985". A *Challan / Note / Both* switch picks which boxes the entry form shows.
@@ -26,8 +36,8 @@ The owner does the selling, the collection of payments and the deliveries all by
 - "I Gave" / "I Got" entries with a running balance per party, on any date picked from a calendar.
 - An optional challan number on each entry ("CH. NO. 985"), a note, or both.
 - Payments are matched to the oldest unpaid bills first, so each bill shows what is still pending.
-- Vasuli list: who owes money, and who is actually overdue (past the due date, or older than 15 days).
-- Send a statement or reminder on WhatsApp, SMS or call from the party screen. Invalid phone numbers are flagged.
+- Vasuli list: who owes money, and who is actually overdue (past the due date, or older than 15 days). It folds up when not needed.
+- Send a reminder on WhatsApp as a short text or the full statement PDF, or SMS or call. Invalid phone numbers are flagged.
 - Delete an entry or a whole party, always after a confirmation that shows the amounts involved.
 - Move balances over from another khata app with a simple CSV file (name, phone, balance). Rows that can't be read exactly are shown and skipped, never guessed.
 
@@ -38,8 +48,9 @@ The owner does the selling, the collection of payments and the deliveries all by
 **PDF statements and bills**
 - Mobile size (phone-width pages, large text) or A4 for printing.
 - Four header colours and white or cream paper, with a live preview.
+- Words in English, Hinglish, Hindi, Gujlish or Gujarati (Udhar / Jama instead of Debit / Credit).
 - Balance due at the top, then one clear block per entry with the challan number.
-- Entry photos as numbered thumbnails, with the full photos at the end.
+- A small photo icon on entries with photos; tap it to open the full photo inside the PDF.
 - Past bills, cancellation, and "Mark received" for part or full payment.
 
 **Cashbook**
@@ -57,6 +68,7 @@ The owner does the selling, the collection of payments and the deliveries all by
 **Safety**
 - App lock with PIN and fingerprint, and an option to block screenshots.
 - Backup and restore as a zip file.
+- Crop, rotate or write on entry photos.
 - If the app ever crashes, the next start shows the error with a Share button.
 
 **Look**
