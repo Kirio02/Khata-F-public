@@ -277,6 +277,9 @@ fun KhataScreen(
     // Overdue = a bill still unpaid and past due date / older than 15 days (shared rule, see OverdueLogic).
     // "Sabko Yaad Dilayein": one list to WhatsApp every party who owes money, one by one.
     var showRemindAll by remember { mutableStateOf(false) }
+    // Vasuli card can be folded to save space; the choice is kept across app restarts.
+    val homePrefs = remember { context.getSharedPreferences("ghanshyam_billing_prefs", android.content.Context.MODE_PRIVATE) }
+    var vasuliExpanded by remember { mutableStateOf(homePrefs.getBoolean("vasuli_expanded", true)) }
     val remindedIds = remember { mutableStateListOf<String>() }
 
     val vasuliList = remember(customers, transactions, startOfToday) {
@@ -625,26 +628,38 @@ fun KhataScreen(
                     item(key = "vasuli_list_section") {
                         Column(modifier = Modifier.fillMaxWidth()) {
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(min = 44.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable {
+                                        vasuliExpanded = !vasuliExpanded
+                                        homePrefs.edit().putBoolean("vasuli_expanded", vasuliExpanded).apply()
+                                    },
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Default.PendingActions, contentDescription = null, tint = UdharRed, modifier = Modifier.size(18.dp))
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = LanguageStrings.get("vasuli_list_title", lang),
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 15.sp,
-                                        color = TextPrimary
-                                    )
-                                }
+                                Icon(Icons.Default.PendingActions, contentDescription = null, tint = UdharRed, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = LanguageStrings.get("vasuli_list_title", lang),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp,
+                                    color = TextPrimary,
+                                    modifier = Modifier.weight(1f)
+                                )
                                 Text(
                                     text = "${vasuliList.size} " + LanguageStrings.get("parties", lang),
                                     fontSize = 11.sp,
                                     color = TextSecondary
                                 )
+                                Icon(
+                                    imageVector = if (vasuliExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                    contentDescription = null,
+                                    tint = TextSecondary,
+                                    modifier = Modifier.size(28.dp)
+                                )
                             }
+                            if (vasuliExpanded) {
                             Spacer(modifier = Modifier.height(6.dp))
                             OutlinedButton(
                                 onClick = { showRemindAll = true },
@@ -744,6 +759,7 @@ fun KhataScreen(
                                         }
                                     }
                                 }
+                            }
                             }
                         }
                     }
