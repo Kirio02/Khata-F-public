@@ -134,6 +134,7 @@ fun KhataScreen(
     var quickActionSelectedCustomer by remember { mutableStateOf<Customer?>(null) }
     var quickActionAmount by remember { mutableStateOf("") }
     var quickActionNote by remember { mutableStateOf("") }
+    var quickActionChallan by remember { mutableStateOf("") }
     var quickActionPaymentMode by remember { mutableStateOf("CASH") }
     var quickActionCashGiven by remember { mutableStateOf(false) }
     var quickActionDate by remember { mutableLongStateOf(EntryDate.NOW) }
@@ -375,6 +376,7 @@ fun KhataScreen(
                                 quickActionType = "GAVE"
                                 quickActionAmount = ""
                                 quickActionNote = ""
+                                quickActionChallan = ""
                                 quickActionPaymentMode = "CASH"
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = UdharRed),
@@ -409,6 +411,7 @@ fun KhataScreen(
                                 quickActionType = "GOT"
                                 quickActionAmount = ""
                                 quickActionNote = ""
+                                quickActionChallan = ""
                                 quickActionPaymentMode = "CASH"
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = JamaGreen),
@@ -1109,6 +1112,7 @@ fun KhataScreen(
                                             quickActionSelectedCustomer = party
                                             quickActionAmount = ""
                                             quickActionNote = ""
+                                            quickActionChallan = ""
                                             quickActionPaymentMode = "CASH"
                                             quickActionDate = EntryDate.NOW
                                             quickActionPartyPickerMode = null
@@ -1219,6 +1223,20 @@ fun KhataScreen(
                         }
                     }
 
+                    ChallanNoteFields(
+                        lang = lang,
+                        challan = quickActionChallan,
+                        onChallanChange = { quickActionChallan = it }
+                    ) {
+                        OutlinedTextField(
+                            value = quickActionNote,
+                            onValueChange = { quickActionNote = it },
+                            label = { Text(text = LanguageStrings.get("note_label", lang)) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
                     // Payment Mode Buttons: CASH, UPI, BANK (Big buttons)
                     Row(
                         modifier = Modifier
@@ -1322,10 +1340,11 @@ fun KhataScreen(
                                 customerId = cust.id,
                                 type = actionType,
                                 amount = parsedAmount,
-                                note = quickActionNote.trim(),
+                                note = EntryDetail.noteToSave(quickActionNote),
                                 paymentMode = quickActionPaymentMode,
                                 date = EntryDate.resolve(quickActionDate),
-                                cashGivenOut = quickActionCashGiven
+                                cashGivenOut = quickActionCashGiven,
+                                challanNo = EntryDetail.challanToSave(quickActionChallan)
                             )
                             quickActionCashGiven = false
                             lastSavedTx = tx
