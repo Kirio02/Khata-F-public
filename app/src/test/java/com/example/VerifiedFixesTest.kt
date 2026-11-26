@@ -132,7 +132,7 @@ class VerifiedFixesTest {
             phone = "9876543210",
             upiId = "test@upi",
             gstin = "24ABCDE1234F1Z5",
-            ownerName = "Kirit",
+            ownerName = "Test Owner",
             state = "Gujarat",
             logoUri = "file:///data/user/0/app/files/shop_logo.jpg",
             email = "shop@example.com"
