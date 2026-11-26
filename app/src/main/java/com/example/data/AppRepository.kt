@@ -360,7 +360,8 @@ class AppRepository(
                         linkedToTxId = if (o.has("linkedToTxId") && !o.isNull("linkedToTxId")) o.getString("linkedToTxId") else null,
                         isCompleted = o.optBoolean("isCompleted", oldIsCancelled),
                         billNumber = o.optString("billNumber", ""),
-                        dueDate = o.optLong("dueDate", 0L)
+                        dueDate = o.optLong("dueDate", 0L),
+                        challanNo = o.optString("challanNo", "")
                     ))
 
                     // Map old isCancelled = true on credit bills into linked payments
@@ -1040,7 +1041,8 @@ class AppRepository(
         date: Long = System.currentTimeMillis(),
         onlyInKhata: Boolean = false,
         dueDate: Long = 0L,
-        cashGivenOut: Boolean = false
+        cashGivenOut: Boolean = false,
+        challanNo: String = ""
     ): Transaction {
         checkWritesAllowed()
         val newTx = TransactionEntity(
@@ -1053,7 +1055,8 @@ class AppRepository(
             linkedToTxId = linkedToTxId,
             isCompleted = isCompleted,
             billNumber = billNumber,
-            dueDate = dueDate
+            dueDate = dueDate,
+            challanNo = challanNo.trim()
         )
         runBlocking(Dispatchers.IO) {
             database.withTransaction {
@@ -1299,7 +1302,8 @@ class AppRepository(
         amount: Double,
         note: String,
         date: Long,
-        paymentMode: String
+        paymentMode: String,
+        challanNo: String? = null // null = leave as it is
     ) {
         checkWritesAllowed()
         runBlocking(Dispatchers.IO) {
@@ -1309,7 +1313,8 @@ class AppRepository(
                     amount = amount.coerceAtLeast(0.01),
                     note = note.trim(),
                     date = date,
-                    paymentMode = paymentMode
+                    paymentMode = paymentMode,
+                    challanNo = challanNo?.trim() ?: current.challanNo
                 )
                 database.transactionDao().update(updated)
 
@@ -2385,6 +2390,7 @@ class AppRepository(
                 o.put("isCompleted", t.isCompleted)
                 o.put("billNumber", t.billNumber)
                 o.put("dueDate", t.dueDate)
+                o.put("challanNo", t.challanNo)
                 txArr.put(o)
             }
             json.put("transactions", txArr)
@@ -2728,7 +2734,8 @@ class AppRepository(
                         linkedToTxId = if (o.has("linkedToTxId") && !o.isNull("linkedToTxId")) o.getString("linkedToTxId") else null,
                         isCompleted = o.optBoolean("isCompleted", oldIsCancelled),
                         billNumber = o.optString("billNumber", ""),
-                        dueDate = o.optLong("dueDate", 0L)
+                        dueDate = o.optLong("dueDate", 0L),
+                        challanNo = o.optString("challanNo", "")
                     ))
 
                     // Map old isCancelled = true on credit bills into linked payments

@@ -36,8 +36,6 @@ object BillPdfGenerator {
     private val MUTED = Color.rgb(100, 116, 139)
     private val RED = Color.rgb(220, 38, 38)
     private val GREEN = Color.rgb(22, 163, 74)
-    private val LINE = Color.rgb(226, 232, 240)
-    private val HEAD_BG = Color.rgb(41, 37, 36)
 
     data class BillData(
         val invoice: Invoice,
@@ -50,21 +48,27 @@ object BillPdfGenerator {
     fun generate(context: Context, store: StoreProfile, data: BillData, lang: AppLanguage): File {
         val inv = data.invoice
         fun t(key: String) = LanguageStrings.get(key, lang)
+        // Owner's PDF design (More > PDF ka design): phone-width page or A5 for printing.
+        val style = PdfStyle.load(context)
+        val W = if (style.layout == PdfLayout.PHONE) 360 else PAGE_W
+        val H = if (style.layout == PdfLayout.PHONE) 640 else PAGE_H
 
         val dir = File(context.cacheDir, "invoices").apply { mkdirs() }
         val safeNum = inv.billNumber.replace("[^a-zA-Z0-9_.-]".toRegex(), "_").ifBlank { "draft" }
         val file = File(dir, "Bill_$safeNum.pdf")
 
         val doc = PdfDocument()
-        val page = doc.startPage(PdfDocument.PageInfo.Builder(PAGE_W, PAGE_H, 1).create())
+        val page = doc.startPage(PdfDocument.PageInfo.Builder(W, H, 1).create())
         val c = page.canvas
         val p = Paint(Paint.ANTI_ALIAS_FLAG)
-        val right = PAGE_W - M
+        p.color = style.paper.rgb
+        c.drawRect(0f, 0f, W.toFloat(), H.toFloat(), p)
+        val right = W - M
 
         // ---- Header band: logo + shop name / address / phone ----
         val headH = 86f
-        p.color = HEAD_BG
-        c.drawRect(0f, 0f, PAGE_W.toFloat(), headH, p)
+        p.color = style.accent.rgb
+        c.drawRect(0f, 0f, W.toFloat(), headH, p)
 
         var textLeft = M
         loadLogo(context, store.logoUri)?.let { logo ->
@@ -140,7 +144,7 @@ object BillPdfGenerator {
         val rowH = 22f
         val boxTop = y
         val boxBottom = boxTop + rows.size * rowH + 10f
-        p.style = Paint.Style.STROKE; p.color = LINE; p.strokeWidth = 1f
+        p.style = Paint.Style.STROKE; p.color = style.line; p.strokeWidth = 1f
         c.drawRoundRect(RectF(M, boxTop, right, boxBottom), 6f, 6f, p)
         p.style = Paint.Style.FILL
         var ry = boxTop + 20f
@@ -185,8 +189,8 @@ object BillPdfGenerator {
         }
 
         // ---- Chit photo fills the space left above the footer ----
-        val footerY = PAGE_H - 22f
-        val photo = data.chitPhotoPath?.let { decodeScaled(it, 900) }
+        val footerY = H - 22f
+        val photo = data.chitPhotoPath?.takeIf { style.photos }?.let { decodeScaled(it, 900) }
         if (photo != null) {
             y += 18f
             p.color = MUTED; p.textSize = 9f; p.typeface = Typeface.DEFAULT
@@ -200,7 +204,7 @@ object BillPdfGenerator {
                 val h = photo.height * scale
                 val left = M + (availW - w) / 2f
                 c.drawBitmap(photo, null, RectF(left, y, left + w, y + h), Paint(Paint.FILTER_BITMAP_FLAG))
-                p.style = Paint.Style.STROKE; p.color = LINE
+                p.style = Paint.Style.STROKE; p.color = style.line
                 c.drawRect(left, y, left + w, y + h, p)
                 p.style = Paint.Style.FILL
             }
@@ -208,9 +212,9 @@ object BillPdfGenerator {
         }
 
         // ---- Footer ----
-        p.color = LINE; c.drawLine(M, footerY - 12f, right, footerY - 12f, p)
+        p.color = style.line; c.drawLine(M, footerY - 12f, right, footerY - 12f, p)
         p.color = MUTED; p.textSize = 9f; p.textAlign = Paint.Align.CENTER
-        c.drawText(t("pdfb_thanks"), PAGE_W / 2f, footerY, p)
+        c.drawText(t("pdfb_thanks"), W / 2f, footerY, p)
         p.textAlign = Paint.Align.LEFT
 
         doc.finishPage(page)

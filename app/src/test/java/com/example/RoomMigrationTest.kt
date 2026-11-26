@@ -266,4 +266,21 @@ class RoomMigrationTest {
         txCursor.close()
         db.close()
     }
+
+    @Test
+    fun testMigration9To10KeepsEntriesAndAddsEmptyChallan() {
+        var db = helper.createDatabase(TEST_DB, 9)
+        db.execSQL("INSERT INTO customers (id, name, phone, address, gstin, createdAt, type) VALUES ('c1', 'Test Party', '9876500001', '', '', 1000, 'CUSTOMER')")
+        db.execSQL("INSERT INTO transactions (id, customerId, amount, type, note, date, paymentMode, linkedToTxId, isCompleted, billNumber, dueDate) VALUES ('t1', 'c1', 750.0, 'GAVE', '985', 1000, 'CASH', NULL, 0, '', 0)")
+        db.close()
+
+        db = helper.runMigrationsAndValidate(TEST_DB, 10, true, AppDatabase.MIGRATION_9_10)
+        val c = db.query("SELECT amount, note, challanNo FROM transactions WHERE id = 't1'")
+        assertTrue(c.moveToFirst())
+        assertEquals(750.0, c.getDouble(0), 0.001)
+        assertEquals("985", c.getString(1))
+        assertEquals("", c.getString(2))
+        c.close()
+        db.close()
+    }
 }

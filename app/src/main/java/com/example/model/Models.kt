@@ -37,7 +37,8 @@ data class Transaction(
     val linkedToTxId: String? = null, // Links payment to a specific credit bill
     val isCompleted: Boolean = false, // Plain checkbox (goods delivered/packed), no money effect
     val billNumber: String = "",
-    val dueDate: Long = 0L
+    val dueDate: Long = 0L,
+    val challanNo: String = "" // Delivery challan number, typed by the owner; shown as "CH. NO. 985"
 )
 
 data class InventoryItem(

@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -319,7 +320,8 @@ fun ShopProfileScreen(
         ThemePickerCard(lang = currentLang)
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Shop Profile Card
+        // Shop Profile Card: folded by default (it is long and rarely changed). Tap the title to open.
+        var shopExpanded by rememberSaveable { mutableStateOf(false) }
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
@@ -327,7 +329,10 @@ fun ShopProfileScreen(
             border = CardDefaults.outlinedCardBorder()
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().clickable { shopExpanded = !shopExpanded }
+                ) {
                     Box(
                         modifier = Modifier
                             .size(50.dp)
@@ -338,12 +343,19 @@ fun ShopProfileScreen(
                         Icon(Icons.Default.Storefront, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(28.dp))
                     }
                     Spacer(modifier = Modifier.width(14.dp))
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(text = if (storeName.isNotBlank()) storeName else LanguageStrings.get("tab_profile", currentLang), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge, color = TextPrimary)
                         Text(text = LanguageStrings.get("business_gst_config", currentLang), style = MaterialTheme.typography.bodySmall, color = TextSecondary)
                     }
+                    Icon(
+                        imageVector = if (shopExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                        contentDescription = null,
+                        tint = TextSecondary,
+                        modifier = Modifier.size(28.dp)
+                    )
                 }
 
+                if (shopExpanded) {
                 Spacer(modifier = Modifier.height(16.dp))
                 HorizontalDivider(color = CardBorder)
                 Spacer(modifier = Modifier.height(16.dp))
@@ -514,6 +526,7 @@ fun ShopProfileScreen(
                 if (isSavedSnackbar) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(text = LanguageStrings.get("store_saved_success", currentLang), color = JamaGreen, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                }
                 }
             }
         }
@@ -748,7 +761,12 @@ fun ShopProfileScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Opening Balances Card (Cash book & Bank book)
+        com.example.ui.components.PdfDesignCard(lang = currentLang)
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Opening Balances Card (Cash book & Bank book): folded to save space.
+        var balancesExpanded by rememberSaveable { mutableStateOf(false) }
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
@@ -756,7 +774,10 @@ fun ShopProfileScreen(
             border = CardDefaults.outlinedCardBorder()
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().clickable { balancesExpanded = !balancesExpanded }
+                ) {
                     Box(
                         modifier = Modifier
                             .size(40.dp)
@@ -780,8 +801,15 @@ fun ShopProfileScreen(
                             color = TextSecondary
                         )
                     }
+                    Icon(
+                        imageVector = if (balancesExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                        contentDescription = null,
+                        tint = TextSecondary,
+                        modifier = Modifier.size(28.dp)
+                    )
                 }
 
+                if (balancesExpanded) {
                 Spacer(modifier = Modifier.height(14.dp))
 
                 OutlinedTextField(
@@ -820,6 +848,7 @@ fun ShopProfileScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(text = LanguageStrings.get("btn_save_balances", currentLang), fontWeight = FontWeight.Bold)
+                }
                 }
             }
         }

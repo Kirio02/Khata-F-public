@@ -195,7 +195,8 @@ object StatementGenerator {
                 val tx = entry.transaction
                 val dateStr = dateFormat.format(Date(tx.date))
                 val typeLabel = if (tx.type == "GAVE") "GAVE (Dr)" else "GOT (Cr)"
-                val noteStr = if (tx.note.isNotBlank()) " - ${tx.note}" else ""
+                val noteText = listOf(com.example.ui.components.ChallanNo.label(tx.challanNo), tx.note).filter { it.isNotBlank() }.joinToString(", ")
+                val noteStr = if (noteText.isNotBlank()) " - $noteText" else ""
                 sb.append("• $dateStr: $typeLabel ₹${"%.2f".format(tx.amount)}$noteStr\n")
                 sb.append("  Bal: ₹${"%.2f".format(entry.runningBalance)}\n")
             }
@@ -229,235 +230,24 @@ object StatementGenerator {
     fun generateStatementPdf(
         context: Context,
         statement: StatementResult,
-        storeProfile: StoreProfile
+        storeProfile: StoreProfile,
+        /** Entry id -> photo file paths, shown as thumbnails and full size at the end. */
+        photosByTx: Map<String, List<String>> = emptyMap()
     ): File {
         val statementsDir = File(context.cacheDir, "statements").apply { mkdirs() }
         val safeName = statement.customer.name.replace("[^a-zA-Z0-9_.-]".toRegex(), "_")
         val pdfFile = File(statementsDir, "Statement_${safeName}_${System.currentTimeMillis()}.pdf")
 
         try {
-            val pdfDocument = PdfDocument()
-            val pageWidth = 595 // A4 standard width
-            val pageHeight = 842 // A4 standard height
-            val margin = 36f
-            val contentWidth = pageWidth - (2 * margin)
-
-            val paint = Paint().apply { isAntiAlias = true }
-            val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-
-            val pages = mutableListOf<PdfDocument.Page>()
-            var currentPageNum = 1
-
-            fun startNewPage(): Triple<PdfDocument.Page, Canvas, Float> {
-                val pageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, currentPageNum).create()
-                val page = pdfDocument.startPage(pageInfo)
-                pages.add(page)
-                val canvas = page.canvas
-
-                // Decorative top bar
-                paint.color = Color.rgb(30, 58, 138)
-                paint.style = Paint.Style.FILL
-                canvas.drawRect(margin, margin, margin + contentWidth, margin + 4f, paint)
-
-                var y = margin + 22f
-
-                // Store Name Header
-                paint.color = Color.rgb(30, 58, 138)
-                paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-                paint.textSize = 16f
-                val shopName = storeProfile.storeName.ifBlank { "Ghanshyam Kids Wear & Traders" }
-                canvas.drawText(shopName, margin, y, paint)
-
-                paint.color = Color.rgb(71, 85, 105)
-                paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
-                paint.textSize = 8.5f
-                y += 12f
-                val phoneAndGstin = listOfNotNull(
-                    if (storeProfile.phone.isNotBlank()) "Phone: ${storeProfile.phone}" else null,
-                    if (storeProfile.gstin.isNotBlank()) "GSTIN: ${storeProfile.gstin}" else null,
-                    if (storeProfile.upiId.isNotBlank()) "UPI: ${storeProfile.upiId}" else null
-                ).joinToString(" | ")
-                if (phoneAndGstin.isNotBlank()) {
-                    canvas.drawText(phoneAndGstin, margin, y, paint)
-                    y += 12f
-                }
-
-                // Statement Title & Party Info Block
-                paint.color = Color.rgb(241, 245, 249)
-                canvas.drawRoundRect(RectF(margin, y, margin + contentWidth, y + 40f), 6f, 6f, paint)
-
-                paint.color = Color.rgb(15, 23, 42)
-                paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-                paint.textSize = 11f
-                canvas.drawText("ACCOUNT STATEMENT (${statement.customer.type})", margin + 10f, y + 16f, paint)
-
-                paint.color = Color.rgb(71, 85, 105)
-                paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
-                paint.textSize = 8.5f
-                canvas.drawText("Party: ${statement.customer.name}   |   Phone: ${statement.customer.phone.ifBlank { "N/A" }}", margin + 10f, y + 30f, paint)
-
-                val periodText = "${statement.dateRange.label} (${statement.filter.label})"
-                val periodWidth = paint.measureText(periodText)
-                canvas.drawText(periodText, margin + contentWidth - periodWidth - 10f, y + 22f, paint)
-
-                y += 48f
-
-                // Table Header Bar
-                paint.color = Color.rgb(30, 58, 138)
-                canvas.drawRoundRect(RectF(margin, y, margin + contentWidth, y + 20f), 4f, 4f, paint)
-
-                paint.color = Color.WHITE
-                paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-                paint.textSize = 8.5f
-                val headerY = y + 13f
-                canvas.drawText("Date", margin + 8f, headerY, paint)
-                canvas.drawText("Description / Note", margin + 70f, headerY, paint)
-                canvas.drawText("Mode", margin + 260f, headerY, paint)
-                canvas.drawText("Debit (Dr)", margin + 320f, headerY, paint)
-                canvas.drawText("Credit (Cr)", margin + 390f, headerY, paint)
-                canvas.drawText("Balance", margin + 460f, headerY, paint)
-
-                y += 24f
-                return Triple(page, canvas, y)
-            }
-
-            var (currentPage, canvas, y) = startNewPage()
-
-            // Draw Opening Balance Row
-            paint.color = Color.rgb(248, 250, 252)
-            canvas.drawRect(margin, y - 2f, margin + contentWidth, y + 16f, paint)
-            paint.color = Color.rgb(30, 41, 59)
-            paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-            paint.textSize = 8.5f
-            canvas.drawText("-", margin + 8f, y + 10f, paint)
-            canvas.drawText("OPENING BALANCE", margin + 70f, y + 10f, paint)
-            canvas.drawText("-", margin + 260f, y + 10f, paint)
-            canvas.drawText("-", margin + 320f, y + 10f, paint)
-            canvas.drawText("-", margin + 390f, y + 10f, paint)
-            val opBalStr = "₹" + "%.2f".format(statement.openingBalance)
-            canvas.drawText(opBalStr, margin + 460f, y + 10f, paint)
-            y += 20f
-
-            // Draw Transaction Entries
-            val rowHeight = 18f
-            val bottomMargin = margin + 60f
-
-            for (entry in statement.entries) {
-                if (y + rowHeight > pageHeight - bottomMargin) {
-                    // Draw Page number footer
-                    paint.color = Color.rgb(148, 163, 184)
-                    paint.textSize = 8f
-                    paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
-                    canvas.drawText("Page $currentPageNum", margin + contentWidth / 2f - 15f, pageHeight - margin + 10f, paint)
-
-                    pdfDocument.finishPage(currentPage)
-                    currentPageNum++
-                    val next = startNewPage()
-                    currentPage = next.first
-                    canvas = next.second
-                    y = next.third
-                }
-
-                // Alternating row background
-                if (entriesIndex(statement.entries, entry) % 2 == 1) {
-                    paint.color = Color.rgb(248, 250, 252)
-                    canvas.drawRect(margin, y - 2f, margin + contentWidth, y + 14f, paint)
-                }
-
-                val tx = entry.transaction
-                val dateStr = dateFormat.format(Date(tx.date))
-                paint.color = Color.rgb(51, 65, 85)
-                paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
-                paint.textSize = 8f
-
-                canvas.drawText(dateStr, margin + 8f, y + 9f, paint)
-
-                val desc = when {
-                    tx.note.isNotBlank() && tx.billNumber.isNotBlank() -> "${tx.billNumber}: ${tx.note}"
-                    tx.billNumber.isNotBlank() -> "Bill #${tx.billNumber}"
-                    tx.note.isNotBlank() -> tx.note
-                    tx.type == "GAVE" -> "Goods on Credit"
-                    else -> "Payment Received"
-                }
-                val safeDesc = if (desc.length > 38) desc.take(35) + "..." else desc
-                canvas.drawText(safeDesc, margin + 70f, y + 9f, paint)
-
-                canvas.drawText(tx.paymentMode, margin + 260f, y + 9f, paint)
-
-                if (entry.debit > 0) {
-                    paint.color = Color.rgb(220, 38, 38) // Udhar red
-                    canvas.drawText("₹" + "%.2f".format(entry.debit), margin + 320f, y + 9f, paint)
-                } else {
-                    paint.color = Color.rgb(148, 163, 184)
-                    canvas.drawText("-", margin + 320f, y + 9f, paint)
-                }
-
-                if (entry.credit > 0) {
-                    paint.color = Color.rgb(22, 163, 74) // Jama green
-                    canvas.drawText("₹" + "%.2f".format(entry.credit), margin + 390f, y + 9f, paint)
-                } else {
-                    paint.color = Color.rgb(148, 163, 184)
-                    canvas.drawText("-", margin + 390f, y + 9f, paint)
-                }
-
-                paint.color = if (entry.runningBalance >= 0) Color.rgb(30, 58, 138) else Color.rgb(220, 38, 38)
-                paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-                canvas.drawText("₹" + "%.2f".format(entry.runningBalance), margin + 460f, y + 9f, paint)
-
-                y += rowHeight
-            }
-
-            // Check space for closing balance summary box (needs ~55f)
-            if (y + 60f > pageHeight - bottomMargin) {
-                paint.color = Color.rgb(148, 163, 184)
-                paint.textSize = 8f
-                paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
-                canvas.drawText("Page $currentPageNum", margin + contentWidth / 2f - 15f, pageHeight - margin + 10f, paint)
-
-                pdfDocument.finishPage(currentPage)
-                currentPageNum++
-                val next = startNewPage()
-                currentPage = next.first
-                canvas = next.second
-                y = next.third
-            }
-
-            // Draw Closing Summary Box
-            y += 8f
-            paint.color = Color.rgb(241, 245, 249)
-            canvas.drawRoundRect(RectF(margin, y, margin + contentWidth, y + 48f), 6f, 6f, paint)
-
-            paint.color = Color.rgb(71, 85, 105)
-            paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-            paint.textSize = 8.5f
-            canvas.drawText("TOTAL DEBIT: ₹${"%.2f".format(statement.totalDebit)}", margin + 12f, y + 16f, paint)
-            canvas.drawText("TOTAL CREDIT: ₹${"%.2f".format(statement.totalCredit)}", margin + 200f, y + 16f, paint)
-
-            val closingBal = statement.closingBalance
-            paint.textSize = 10.5f
-            if (closingBal > 0.01) {
-                paint.color = Color.rgb(22, 163, 74) // Jama Green / Net receivable
-                canvas.drawText("CLOSING BALANCE (YOU WILL GET): ₹${"%.2f".format(closingBal)}", margin + 12f, y + 36f, paint)
-            } else if (closingBal < -0.01) {
-                paint.color = Color.rgb(220, 38, 38) // Udhar Red / Net payable
-                canvas.drawText("CLOSING BALANCE (YOU WILL GIVE): ₹${"%.2f".format(-closingBal)}", margin + 12f, y + 36f, paint)
-            } else {
-                paint.color = Color.rgb(30, 58, 138)
-                canvas.drawText("CLOSING BALANCE: ₹0.00 (ALL ACCOUNTS SETTLED)", margin + 12f, y + 36f, paint)
-            }
-
-            // Final page number footer
-            paint.color = Color.rgb(148, 163, 184)
-            paint.textSize = 8f
-            paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
-            canvas.drawText("Page $currentPageNum", margin + contentWidth / 2f - 15f, pageHeight - margin + 10f, paint)
-
-            pdfDocument.finishPage(currentPage)
-
-            FileOutputStream(pdfFile).use { fos ->
-                pdfDocument.writeTo(fos)
-            }
-            pdfDocument.close()
+            com.example.ui.components.EntryDetail.load(context)
+            StatementPdf.render(
+                statement = statement,
+                store = storeProfile,
+                style = PdfStyle.load(context),
+                detailMode = com.example.ui.components.EntryDetail.mode,
+                photosByTx = photosByTx,
+                out = pdfFile
+            )
         } catch (t: Throwable) {
             android.util.Log.w("StatementGenerator", "PDF generation fallback: ${t.message}")
             FileOutputStream(pdfFile).use { out ->

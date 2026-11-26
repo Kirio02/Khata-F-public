@@ -69,7 +69,8 @@ data class TransactionEntity(
     val linkedToTxId: String? = null,
     val isCompleted: Boolean = false,
     val billNumber: String = "",
-    val dueDate: Long = 0L
+    val dueDate: Long = 0L,
+    val challanNo: String = ""
 )
 
 fun TransactionEntity.toDomain() = Transaction(
@@ -83,7 +84,8 @@ fun TransactionEntity.toDomain() = Transaction(
     linkedToTxId = linkedToTxId,
     isCompleted = isCompleted,
     billNumber = billNumber,
-    dueDate = dueDate
+    dueDate = dueDate,
+    challanNo = challanNo
 )
 
 fun Transaction.toEntity() = TransactionEntity(
@@ -97,7 +99,8 @@ fun Transaction.toEntity() = TransactionEntity(
     linkedToTxId = linkedToTxId,
     isCompleted = isCompleted,
     billNumber = billNumber,
-    dueDate = dueDate
+    dueDate = dueDate,
+    challanNo = challanNo
 )
 
 @Entity(tableName = "inventory_items")

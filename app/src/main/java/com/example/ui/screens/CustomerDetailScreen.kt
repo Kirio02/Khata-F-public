@@ -7,6 +7,9 @@ import androidx.compose.foundation.verticalScroll
 import com.example.ui.util.EntryDate
 import com.example.ui.components.DueDateChip
 import com.example.ui.components.EntryDateButton
+import com.example.ui.components.ChallanNoteFields
+import com.example.ui.components.EntryDetail
+import com.example.ui.components.ChallanNo
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -675,7 +678,7 @@ fun CustomerDetailScreen(
                                                 }
                                                 Spacer(modifier = Modifier.height(2.dp))
                                                 Text(
-                                                    text = if (tx.note.isNotBlank()) "${tx.note} • $dateStr" else dateStr,
+                                                    text = listOf(ChallanNo.label(tx.challanNo), tx.note, dateStr).filter { it.isNotBlank() }.joinToString(" • "),
                                                     style = MaterialTheme.typography.labelSmall,
                                                     color = TextSecondary
                                                 )
@@ -832,7 +835,7 @@ fun CustomerDetailScreen(
 
                                             Spacer(modifier = Modifier.height(2.dp))
                                             Text(
-                                                text = if (tx.note.isNotBlank()) "${tx.note} • $dateStr" else dateStr,
+                                                text = listOf(ChallanNo.label(tx.challanNo), tx.note, dateStr).filter { it.isNotBlank() }.joinToString(" • "),
                                                 style = MaterialTheme.typography.labelSmall,
                                                 color = TextSecondary
                                             )
@@ -989,6 +992,7 @@ fun CustomerDetailScreen(
         // camera is open, or the photo and typed amount are lost.
         var amountText by rememberSaveable { mutableStateOf("") }
         var noteText by rememberSaveable { mutableStateOf("") }
+        var challanText by rememberSaveable { mutableStateOf("") }
         var onlyInKhata by rememberSaveable { mutableStateOf(false) }
         var showMoreOptions by rememberSaveable { mutableStateOf(false) }
         var selectedPaymentMode by rememberSaveable { mutableStateOf("CASH") }
@@ -1027,6 +1031,11 @@ fun CustomerDetailScreen(
                     )
                     EntryDateButton(value = entryDate, lang = currentLang, onChange = { entryDate = it })
 
+                    ChallanNoteFields(
+                        lang = currentLang,
+                        challan = challanText,
+                        onChallanChange = { challanText = it }
+                    ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
@@ -1046,6 +1055,7 @@ fun CustomerDetailScreen(
                                 noteText = if (noteText.isBlank()) spoken else "$noteText $spoken"
                             }
                         )
+                    }
                     }
 
                     // Optional Due Date Chips for Credit (Udhar) entries
@@ -1157,11 +1167,12 @@ fun CustomerDetailScreen(
                                 customerId = currentCustomer.id,
                                 amount = amt,
                                 type = txTypeToAdd,
-                                note = noteText.trim(),
+                                note = EntryDetail.noteToSave(noteText),
                                 paymentMode = selectedPaymentMode,
                                 onlyInKhata = onlyInKhata,
                                 date = savedDate,
-                                dueDate = computedDueDate
+                                dueDate = computedDueDate,
+                                challanNo = EntryDetail.challanToSave(challanText)
                             )
                             if (pendingAttachments.isNotEmpty()) {
                                 repository.addAttachments(
@@ -1631,10 +1642,16 @@ fun CustomerDetailScreen(
                                     dateRange = dateRange,
                                     filter = filterType
                                 )
+                                val txIds = statementData.entries.map { it.transaction.id }.toSet()
+                                val photosByTx = allAttachments
+                                    .filter { it.ownerType == "ENTRY" && it.ownerId in txIds && it.mimeType.startsWith("image") }
+                                    .sortedBy { it.createdAt }
+                                    .groupBy({ it.ownerId }, { it.filePath })
                                 val pdfFile = StatementGenerator.generateStatementPdf(
                                     context = context,
                                     statement = statementData,
-                                    storeProfile = storeProfile
+                                    storeProfile = storeProfile,
+                                    photosByTx = photosByTx
                                 )
                                 val uri = FileProvider.getUriForFile(
                                     context,
@@ -1715,6 +1732,7 @@ fun CustomerDetailScreen(
         val editingTx = txToEdit!!
         var editAmount by remember { mutableStateOf("%.2f".format(editingTx.amount)) }
         var editNote by remember { mutableStateOf(editingTx.note) }
+        var editChallan by remember { mutableStateOf(editingTx.challanNo) }
         var editMode by remember { mutableStateOf(editingTx.paymentMode) }
         var editDate by remember { mutableStateOf(editingTx.date) }
         val currentTxAttachments = remember(editingTx.id, allAttachments) {
@@ -1736,6 +1754,11 @@ fun CustomerDetailScreen(
                     )
                     EntryDateButton(value = editDate, lang = currentLang, onChange = { editDate = it })
 
+                    ChallanNoteFields(
+                        lang = currentLang,
+                        challan = editChallan,
+                        onChallanChange = { editChallan = it }
+                    ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
@@ -1754,6 +1777,7 @@ fun CustomerDetailScreen(
                                 editNote = if (editNote.isBlank()) spoken else "$editNote $spoken"
                             }
                         )
+                    }
                     }
 
                     // Attachments picker strip
@@ -1808,9 +1832,11 @@ fun CustomerDetailScreen(
                             repository.editTransaction(
                                 txId = editingTx.id,
                                 amount = parsed,
-                                note = editNote.trim(),
+                                // A box hidden by the Challan/Note switch keeps the entry's old value.
+                                note = if (EntryDetail.mode == com.example.ui.components.EntryDetailMode.CHALLAN) editingTx.note else editNote.trim(),
                                 date = editDate,
-                                paymentMode = editMode
+                                paymentMode = editMode,
+                                challanNo = if (EntryDetail.mode == com.example.ui.components.EntryDetailMode.NOTE) editingTx.challanNo else ChallanNo.clean(editChallan)
                             )
                             txToEdit = null
                         }

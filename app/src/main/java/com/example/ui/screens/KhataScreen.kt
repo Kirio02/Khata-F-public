@@ -4,6 +4,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import com.example.ui.util.EntryDate
 import com.example.ui.components.EntryDateButton
+import com.example.ui.components.ChallanNoteFields
+import com.example.ui.components.EntryDetail
+import com.example.ui.components.ChallanNo
 import androidx.compose.runtime.saveable.rememberSaveable
 import android.Manifest
 import android.app.Activity
