@@ -49,6 +49,7 @@ import com.example.ui.util.LanguageStrings
 import com.example.ui.util.RelativeDate
 import com.example.ui.util.AttachmentListSaver
 import com.example.ui.util.PhoneUtil
+import com.example.ui.util.PdfStyle
 import com.example.ui.util.StatementDateRange
 import com.example.ui.util.StatementFilter
 import com.example.ui.util.StatementGenerator
@@ -1691,7 +1692,8 @@ fun CustomerDetailScreen(
                                 val textContent = StatementGenerator.generateStatementText(
                                     statement = statementData,
                                     storeProfile = storeProfile,
-                                    language = currentLang
+                                    language = currentLang,
+                                    pdfLang = PdfStyle.load(context).langFor(currentLang)
                                 )
                                 val waNumber = PhoneUtil.toWhatsAppNumber(currentCustomer.phone)
                                 if (waNumber.isNotBlank()) {

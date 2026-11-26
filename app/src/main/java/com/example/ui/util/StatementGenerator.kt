@@ -170,54 +170,68 @@ object StatementGenerator {
     fun generateStatementText(
         statement: StatementResult,
         storeProfile: StoreProfile,
-        language: AppLanguage = AppLanguage.HINGLISH
+        language: AppLanguage = AppLanguage.HINGLISH,
+        pdfLang: PdfLang? = null
     ): String {
+        val lang = pdfLang ?: PdfLang.from(language)
+        fun t(key: String) = PdfText.get(key, lang)
+
         val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
         val shopName = storeProfile.storeName.ifBlank { "Ghanshyam Kids Wear" }
         val partyName = statement.customer.name
+        val rangeLabel = t(
+            when (statement.dateRange) {
+                StatementDateRange.ALL -> "range_all"
+                StatementDateRange.THIS_MONTH -> "range_month"
+                StatementDateRange.THREE_MONTHS -> "range_3m"
+            }
+        )
+        val filterLabel = t(
+            if (statement.filter == StatementFilter.PENDING_BILLS_ONLY) "filter_pending" else "filter_all"
+        )
         val sb = StringBuilder()
 
-        sb.append("📋 *KHATA STATEMENT* 📋\n")
+        sb.append("📋 *${t("statement")}* 📋\n")
         sb.append("*$shopName*\n")
         if (storeProfile.phone.isNotBlank()) sb.append("Phone: ${storeProfile.phone}\n")
         sb.append("----------------------------\n")
-        sb.append("Party: *$partyName* (${statement.customer.type})\n")
-        sb.append("Period: ${statement.dateRange.label} (${statement.filter.label})\n")
-        sb.append("Date: ${dateFormat.format(Date())}\n")
+        sb.append("${t("text_party")}: *$partyName* (${statement.customer.type})\n")
+        sb.append("${t("text_period")}: $rangeLabel ($filterLabel)\n")
+        sb.append("${t("date")}: ${dateFormat.format(Date())}\n")
         sb.append("----------------------------\n")
 
-        sb.append("Opening Balance: ₹${"%.2f".format(statement.openingBalance)}\n\n")
+        sb.append("${t("opening")}: ₹${"%.2f".format(statement.openingBalance)}\n\n")
 
         if (statement.entries.isEmpty()) {
-            sb.append("No transactions in this period.\n")
+            sb.append("${t("text_no_entries")}\n")
         } else {
             statement.entries.forEach { entry ->
                 val tx = entry.transaction
                 val dateStr = dateFormat.format(Date(tx.date))
-                val typeLabel = if (tx.type == "GAVE") "GAVE (Dr)" else "GOT (Cr)"
+                val typeLabel = if (tx.type == "GAVE") t("debit") else t("credit")
                 val noteText = listOf(com.example.ui.components.ChallanNo.label(tx.challanNo), tx.note).filter { it.isNotBlank() }.joinToString(", ")
                 val noteStr = if (noteText.isNotBlank()) " - $noteText" else ""
                 sb.append("• $dateStr: $typeLabel ₹${"%.2f".format(tx.amount)}$noteStr\n")
-                sb.append("  Bal: ₹${"%.2f".format(entry.runningBalance)}\n")
+                sb.append("  ${t("balance")}: ₹${"%.2f".format(entry.runningBalance)}\n")
             }
         }
 
         sb.append("\n----------------------------\n")
-        sb.append("Total Debit (Gave): ₹${"%.2f".format(statement.totalDebit)}\n")
-        sb.append("Total Credit (Got): ₹${"%.2f".format(statement.totalCredit)}\n")
+        sb.append("${t("debit")}: ₹${"%.2f".format(statement.totalDebit)}\n")
+        sb.append("${t("credit")}: ₹${"%.2f".format(statement.totalCredit)}\n")
 
         val bal = statement.closingBalance
         val closingText = when {
-            bal > 0.01 -> "CLOSING BALANCE: ₹${"%.2f".format(bal)} (YOU WILL GET / LENA HAI)"
-            bal < -0.01 -> "CLOSING BALANCE: ₹${"%.2f".format(-bal)} (YOU WILL GIVE / DENA HAI)"
-            else -> "CLOSING BALANCE: ₹0.00 (ALL SETTLED)"
+            bal > 0.01 -> "${t("balance_due")}: ₹${"%.2f".format(bal)}"
+            bal < -0.01 -> "${t("balance_payable")}: ₹${"%.2f".format(-bal)}"
+            else -> "${t("all_settled")}: ₹0.00"
         }
         sb.append("*$closingText*\n")
 
         if (storeProfile.upiId.isNotBlank() && bal > 0.01) {
-            sb.append("\nPay via UPI: *${storeProfile.upiId}*\n")
+            sb.append("\n${t("pdfb_pay_upi")}: *${storeProfile.upiId}*\n")
         }
-        sb.append("\n_Thank you for your business!_")
+        sb.append("\n_${t("text_thanks")}_")
 
         return sb.toString()
     }

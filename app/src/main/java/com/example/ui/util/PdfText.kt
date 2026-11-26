@@ -69,7 +69,13 @@ object PdfText {
         "pdfb_pay_upi" to W("Pay by UPI", "UPI se bhugtan karein", "UPI से भुगतान करें", "UPI thi chukavani karo", "UPI થી ચૂકવણી કરો"),
         "pdfb_chit_photo" to W("Bill Chit", "Bill ki Chit", "बिल की पर्ची", "Bill ni Chitthi", "બિલની ચિઠ્ઠી"),
         "pdfb_thanks" to W("Thank you! Please visit again.", "Dhanyavaad! Phir padhariye.", "धन्यवाद! फिर पधारिए।", "Aabhar! Fari padharjo.", "આભાર! ફરી પધારજો."),
-        "pdfb_paid_full" to W("PAID IN FULL", "PURA BHUGTAN", "पूरा भुगतान", "PURI CHUKAVANI", "પૂરી ચૂકવણી")
+        "pdfb_paid_full" to W("PAID IN FULL", "PURA BHUGTAN", "पूरा भुगतान", "PURI CHUKAVANI", "પૂરી ચૂકવણી"),
+
+        // Plain-text statement
+        "text_party" to W("Party", "Party", "पार्टी", "Party", "પાર્ટી"),
+        "text_period" to W("Period", "Samay", "समय", "Samay", "સમય"),
+        "text_no_entries" to W("No entries in this period.", "Is samay mein koi entry nahi.", "इस समय में कोई एंट्री नहीं।", "Aa samay ma koi entry nathi.", "આ સમયમાં કોઈ એન્ટ્રી નથી."),
+        "text_thanks" to W("Thank you for your business!", "Dhanyavaad!", "धन्यवाद!", "Aabhar!", "આભાર!")
     )
 
     val keys: Set<String> get() = words.keys
