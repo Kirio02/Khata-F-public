@@ -195,7 +195,7 @@ object StatementGenerator {
         sb.append("*$shopName*\n")
         if (storeProfile.phone.isNotBlank()) sb.append("Phone: ${storeProfile.phone}\n")
         sb.append("----------------------------\n")
-        sb.append("${t("text_party")}: *$partyName* (${statement.customer.type})\n")
+        sb.append("${t("text_party")}: *$partyName*\n")
         sb.append("${t("text_period")}: $rangeLabel ($filterLabel)\n")
         sb.append("${t("date")}: ${dateFormat.format(Date())}\n")
         sb.append("----------------------------\n")

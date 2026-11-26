@@ -59,7 +59,10 @@ import java.util.*
 import com.example.model.Attachment
 import com.example.ui.components.AttachmentPickerStrip
 import com.example.ui.components.FullScreenAttachmentViewer
+import com.example.ui.components.RemindChoiceDialog
 import com.example.ui.components.VoiceNoteButton
+import com.example.ui.util.sendFullStatementPdfToWhatsApp
+import kotlinx.coroutines.launch
 import android.graphics.BitmapFactory
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -75,6 +78,7 @@ fun CustomerDetailScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     val currentLang by repository.language.collectAsState()
     val storeProfile by repository.storeProfile.collectAsState()
     val transactions by repository.transactions.collectAsState()
@@ -107,6 +111,7 @@ fun CustomerDetailScreen(
     var billToMarkReceived by remember { mutableStateOf<Transaction?>(null) }
     var showMarkAllReceivedDialog by remember { mutableStateOf(false) }
     var showStatementDialog by remember { mutableStateOf(false) }
+    var showRemindChoiceDialog by remember { mutableStateOf(false) }
     var showDeletePartyDialog by remember { mutableStateOf(false) }
     var txToDelete by remember { mutableStateOf<Transaction?>(null) }
     var txToEdit by remember { mutableStateOf<Transaction?>(null) }
@@ -279,14 +284,7 @@ fun CustomerDetailScreen(
                         tint = JamaGreen,
                         enabled = hasPhone
                     ) {
-                        sendWhatsAppReminder(
-                            context = context,
-                            party = currentCustomer,
-                            shopName = storeProfile.storeName.ifBlank { "Ghanshyam Kids Wear" },
-                            balance = balance,
-                            upiId = storeProfile.upiId,
-                            lang = currentLang
-                        )
+                        showRemindChoiceDialog = true
                     }
                     LedgerHeaderAction(
                         icon = Icons.Default.Description,
@@ -1909,6 +1907,38 @@ fun CustomerDetailScreen(
                     Text(LanguageStrings.get("btn_cancel", currentLang))
                 }
             }
+        )
+    }
+
+    if (showRemindChoiceDialog) {
+        RemindChoiceDialog(
+            lang = currentLang,
+            partyName = currentCustomer.name,
+            onText = {
+                showRemindChoiceDialog = false
+                sendWhatsAppReminder(
+                    context = context,
+                    party = currentCustomer,
+                    shopName = storeProfile.storeName.ifBlank { "Ghanshyam Kids Wear" },
+                    balance = balance,
+                    upiId = storeProfile.upiId,
+                    lang = currentLang
+                )
+            },
+            onPdf = {
+                showRemindChoiceDialog = false
+                coroutineScope.launch {
+                    sendFullStatementPdfToWhatsApp(
+                        context = context,
+                        customer = currentCustomer,
+                        allTransactions = customerTx,
+                        allAttachments = allAttachments,
+                        storeProfile = storeProfile,
+                        lang = currentLang
+                    )
+                }
+            },
+            onDismiss = { showRemindChoiceDialog = false }
         )
     }
 

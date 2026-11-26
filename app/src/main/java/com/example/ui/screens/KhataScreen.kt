@@ -55,10 +55,12 @@ import com.example.model.PartyType
 import com.example.model.Transaction
 import com.example.ui.components.ContactImportModal
 import com.example.ui.components.EmptyStateView
+import com.example.ui.components.RemindChoiceDialog
 import com.example.ui.theme.*
 import com.example.ui.util.LanguageStrings
 import com.example.ui.util.QuickEntry
 import com.example.ui.util.PhoneUtil
+import com.example.ui.util.sendFullStatementPdfToWhatsApp
 import com.example.data.OverdueLogic
 import com.example.ui.util.VoiceEntryParser
 import com.example.ui.util.VoiceParsedEntry
@@ -85,7 +87,9 @@ fun KhataScreen(
     val storeProfile by repository.storeProfile.collectAsState()
     val simpleMode by repository.simpleMode.collectAsState()
     val lastBackupTimestamp by repository.lastBackupTimestamp.collectAsState()
+    val allAttachments by repository.attachments.collectAsState()
     val lang = currentLang
+    var remindChoiceTarget by remember { mutableStateOf<Pair<Customer, Double>?>(null) }
 
     val totalReceivable = remember(transactions, customers) { repository.getTotalReceivable() }
     val totalPayable = remember(transactions, customers) { repository.getTotalPayable() }
@@ -740,7 +744,7 @@ fun KhataScreen(
                                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                             // WhatsApp Reminder Button
                                             IconButton(
-                                                onClick = { launchWhatsApp(party.phone, party.name, amount) },
+                                                onClick = { remindChoiceTarget = party to amount },
                                                 modifier = Modifier
                                                     .size(48.dp)
                                                     .clip(CircleShape)
@@ -1940,6 +1944,31 @@ fun KhataScreen(
                     Text(text = LanguageStrings.get("btn_cancel", lang))
                 }
             }
+        )
+    }
+
+    remindChoiceTarget?.let { (party, amount) ->
+        RemindChoiceDialog(
+            lang = lang,
+            partyName = party.name,
+            onText = {
+                remindChoiceTarget = null
+                launchWhatsApp(party.phone, party.name, amount)
+            },
+            onPdf = {
+                remindChoiceTarget = null
+                coroutineScope.launch {
+                    sendFullStatementPdfToWhatsApp(
+                        context = context,
+                        customer = party,
+                        allTransactions = transactions,
+                        allAttachments = allAttachments,
+                        storeProfile = storeProfile,
+                        lang = lang
+                    )
+                }
+            },
+            onDismiss = { remindChoiceTarget = null }
         )
     }
 }

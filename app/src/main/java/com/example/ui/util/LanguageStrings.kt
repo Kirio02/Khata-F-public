@@ -893,7 +893,11 @@ object LanguageStrings {
         "permission_denied_title" to Trans("Permission Deny Hui", "अनुमति अस्वीकृत", "પરવાનગી નકારાઈ", "Permission Denied"),
         "permission_required_title" to Trans("Permission Zaroori Hai", "अनुमति आवश्यक है", "પરવાનગી જરૂરી છે", "Permission Required"),
         "onboarding_shop_subtitle" to Trans("Apni dukaan ki jankari set karein", "अपनी दुकान की जानकारी सेट करें", "તમારી દુકાનની વિગતો સેટ કરો", "Set up your shop profile"),
-        "invalid_pin_msg" to Trans("Galat PIN. Dobara koshish karein.", "गलत पिन। पुनः प्रयास करें।", "ખોટો PIN. ફરી પ્રયાસ કરો.", "Incorrect PIN. Try again.")
+        "invalid_pin_msg" to Trans("Galat PIN. Dobara koshish karein.", "गलत पिन। पुनः प्रयास करें।", "ખોટો PIN. ફરી પ્રયાસ કરો.", "Incorrect PIN. Try again."),
+        "remind_how_title" to Trans("Kaise bhejein?", "कैसे भेजें?", "કેવી રીતે મોકલવું?", "Send as?"),
+        "remind_send_text" to Trans("Text bhejein", "टेक्स्ट भेजें", "ટેક્સ્ટ મોકલો", "Send text"),
+        "remind_send_pdf" to Trans("PDF bhejein (poora hisaab)", "PDF भेजें (पूरा हिसाब)", "PDF મોકલો (પૂરો હિસાબ)", "Send PDF (full statement)"),
+        "remind_pdf_failed" to Trans("PDF nahi ban paya", "PDF नहीं बन पाया", "PDF બની શકી નહીં", "Could not make the PDF")
     )
 }
 
