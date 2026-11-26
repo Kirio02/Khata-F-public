@@ -7,6 +7,7 @@ import androidx.core.content.FileProvider
 import androidx.room.withTransaction
 import com.example.data.local.*
 import com.example.model.*
+import com.example.ui.components.ChallanNo
 import com.example.ui.util.PhoneUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -131,6 +132,7 @@ class AppRepository(
                     }
                     cleanExpiredBinEntries()
                     refreshAllInMemoryCachesInternal()
+                    moveOldChallanNotesOnStartIfNeeded()
                 } catch (e: Exception) {
                     Log.e("AppRepository", "Async startup initialization error: ${e.message}", e)
                     _migrationError.value = e.localizedMessage ?: "Startup error"
@@ -147,10 +149,43 @@ class AppRepository(
                 }
                 cleanExpiredBinEntries()
                 refreshAllInMemoryCachesInternal()
+                moveOldChallanNotesOnStartIfNeeded()
                 _isInitialLoading.value = false
                 startRoomFlowCollectors()
             }
         }
+    }
+
+    private suspend fun moveOldChallanNotesOnStartIfNeeded() {
+        if (_isMigrationBlocked.value || prefs.getBoolean("challan_notes_moved_v1", false)) return
+        try {
+            moveOldChallanNotes()
+            prefs.edit().putBoolean("challan_notes_moved_v1", true).commit()
+        } catch (e: Exception) {
+            Log.e("AppRepository", "Error moving old challan notes: ${e.message}", e)
+        }
+    }
+
+    suspend fun moveOldChallanNotes(): Int = withContext(Dispatchers.IO) {
+        val partyTypeById = database.customerDao().getAllList().associate { it.id to it.type }
+        val txs = database.transactionDao().getAllList()
+        var changed = 0
+        database.withTransaction {
+            for (tx in txs) {
+                if (tx.challanNo.isNotBlank()) continue
+                val partyType = partyTypeById[tx.customerId] ?: continue
+                val isBillEntry = (partyType == PartyType.CUSTOMER.raw && tx.type == "GAVE" && tx.linkedToTxId == null) ||
+                    (partyType == PartyType.SUPPLIER.raw && tx.type == "GOT" && tx.linkedToTxId == null)
+                if (!isBillEntry) continue
+                val challan = ChallanNo.fromOldNote(tx.note) ?: continue
+                database.transactionDao().update(tx.copy(challanNo = challan, note = ""))
+                changed++
+            }
+        }
+        if (changed > 0) {
+            _transactions.value = database.transactionDao().getAllList().map { it.toDomain() }
+        }
+        changed
     }
 
     suspend fun awaitInitialization() {
@@ -535,6 +570,12 @@ class AppRepository(
 
             _migrationError.value = null
             _isMigrationBlocked.value = false
+
+            try {
+                moveOldChallanNotes()
+            } catch (e: Exception) {
+                Log.e("AppRepository", "Error moving old challan notes after migration: ${e.message}", e)
+            }
 
             if (orphanCount > 0) {
                 _migrationNotice.value = "Migration recovered $orphanCount unlinked transaction(s) and attached them to 'Recovered entries'."
@@ -3077,6 +3118,7 @@ class AppRepository(
                         )
                     }
                 }
+                moveOldChallanNotes()
                 refreshAllInMemoryCachesInternal()
             }
             validation.copy(

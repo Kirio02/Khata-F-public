@@ -57,6 +57,7 @@ object EntryDetail {
 object ChallanNo {
     const val PREFIX = "CH. NO. "
     private val TYPED_PREFIX = Regex("""^(ch(allan)?\.?\s*(no|number)?\.?)\s*[:#.\-]?\s*""", RegexOption.IGNORE_CASE)
+    private val BARE_CHALLAN = Regex("""^[0-9]{1,7}[A-Za-z]?$""")
 
     /** Drops a "CH. NO." the owner typed himself, so it is never shown twice. */
     fun clean(raw: String): String {
@@ -64,6 +65,12 @@ object ChallanNo {
         val m = TYPED_PREFIX.find(t) ?: return t
         val rest = t.substring(m.range.last + 1).trim()
         return if (rest.isEmpty()) t else rest
+    }
+
+    /** Returns the challan number when the whole note (trimmed) is just a challan number, else null. */
+    fun fromOldNote(note: String): String? {
+        val cleaned = clean(note)
+        return if (BARE_CHALLAN.matches(cleaned)) cleaned else null
     }
 
     fun label(challanNo: String): String = if (challanNo.isBlank()) "" else PREFIX + challanNo.trim()
